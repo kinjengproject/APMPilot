@@ -16,7 +16,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.o3dr.android.client.ControlTower;
-import com.o3dr.android.client.Drone;
+import com.o3dr.android.client.MavlinkObserver;
 import com.o3dr.android.client.interfaces.DroneListener;
 import com.o3dr.android.client.interfaces.TowerListener;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
@@ -29,16 +29,18 @@ import com.o3dr.services.android.lib.drone.property.Battery;
 import com.o3dr.services.android.lib.drone.property.Speed;
 import com.o3dr.services.android.lib.drone.property.State;
 import com.o3dr.services.android.lib.drone.property.VehicleMode;
+import com.o3dr.services.android.lib.mavlink.MavlinkMessageWrapper;
 
 import org.kinjeng.apmpilot.R;
 import org.kinjeng.apmpilot.classes.BaseJoystick;
+import org.kinjeng.apmpilot.classes.CustomDrone;
 import org.kinjeng.apmpilot.classes.RCOverrideJoystick;
 
 public class MainActivity extends Activity implements TowerListener, DroneListener {
 
     protected BaseJoystick joystick;
     protected ControlTower controlTower;
-    protected Drone drone;
+    protected CustomDrone drone;
     protected final Handler handler = new Handler();
 
     protected PowerManager.WakeLock mWakeLock;
@@ -110,7 +112,7 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         });
 
         controlTower = new ControlTower(getApplicationContext());
-        drone = new Drone(getApplicationContext());
+        drone = new CustomDrone(getApplicationContext());
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         int prefManualMode = 1;
@@ -270,6 +272,10 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         Battery battery = drone.getAttribute(AttributeType.BATTERY);
         ((TextView) findViewById(R.id.text_battery_vol)).setText("Bat Vol: " + String.format("%3.1f", battery.getBatteryVoltage()) + " V");
         ((TextView) findViewById(R.id.text_battery_cur)).setText("Bat Cur: " + String.format("%3.1f", battery.getBatteryCurrent()) + " A");
+        ((TextView) findViewById(R.id.text_throttle)).setText("Thro: " + String.format("%3.1f", drone.getThrottle()));
+        ((TextView) findViewById(R.id.text_roll)).setText("Roll: " + String.format("%3.1f", drone.getRoll()));
+        ((TextView) findViewById(R.id.text_pitch)).setText("Pitch: " + String.format("%3.1f", drone.getPitch()));
+        ((TextView) findViewById(R.id.text_yaw)).setText("Yaw: " + String.format("%3.1f", drone.getYaw()));
     }
 
     protected void updateGPSInfo() {

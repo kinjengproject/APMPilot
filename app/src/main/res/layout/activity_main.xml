@@ -127,12 +127,37 @@
             android:layout_gravity="fill_vertical">
 
             <TextView
+                android:text="Thro:"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:id="@+id/text_xxxxx"
+                android:id="@+id/text_throttle"
+                android:textColor="@android:color/white"
+                android:layout_gravity="left" />
+
+            <TextView
+                android:text="Roll:"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/text_roll"
+                android:textColor="@android:color/white"
+                android:layout_gravity="left" />
+
+            <TextView
+                android:text="Pitch:"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/text_pitch"
+                android:textColor="@android:color/white"
+                android:layout_gravity="left" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/text_yaw"
                 android:textColor="@android:color/white"
                 android:layout_weight="1"
-                android:text="xxxxx" />
+                android:text="Yaw:"
+                android:layout_gravity="left" />
 
             <ImageButton
                 android:layout_width="wrap_content"

@@ -7,11 +7,6 @@ import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 
-import com.o3dr.android.client.Drone;
-import com.o3dr.android.client.apis.VehicleApi;
-import com.o3dr.services.android.lib.drone.property.Type;
-import com.o3dr.services.android.lib.drone.property.VehicleMode;
-
 /**
  * Created by sblaksono on 24/10/2016.
  */
@@ -19,16 +14,15 @@ import com.o3dr.services.android.lib.drone.property.VehicleMode;
 public abstract class BaseJoystick {
 
     protected Context context;
-    protected float currentThrottle = 0;
 
     public BaseJoystick(Context _context) {
         context = _context;
     }
 
-    public boolean processMotionEvent(Drone drone, MotionEvent event, SharedPreferences preferences) {
+    public boolean processMotionEvent(CustomDrone drone, MotionEvent event, SharedPreferences preferences) {
 
         // Check if this event if from a D-pad and process accordingly.
-        if ((event.getSource() & InputDevice.SOURCE_DPAD) != InputDevice.SOURCE_DPAD) {
+        if ((event.getSource() & InputDevice.SOURCE_DPAD) == InputDevice.SOURCE_DPAD) {
 
             float xaxis = event.getAxisValue(MotionEvent.AXIS_HAT_X);
             float yaxis = event.getAxisValue(MotionEvent.AXIS_HAT_Y);
@@ -94,72 +88,83 @@ public abstract class BaseJoystick {
         return 0;
     }
 
-    private void processJoystickInput0(Drone drone, MotionEvent event, int historyPos) {
+    // translate inputs from joystick (from -1.0f to 1.0f)
+    private void processJoystickInput0(CustomDrone drone, MotionEvent event, int historyPos) {
         InputDevice mInputDevice = event.getDevice();
 
-        float throttle = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Y, historyPos);
+        float throttle = -getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Y, historyPos);
         float roll = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Z, historyPos);
-        float pitch = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_RZ, historyPos) * -1;
+        float pitch = -getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_RZ, historyPos);
         float yaw = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_X, historyPos);
-        float ltrigger = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_LTRIGGER, historyPos);
-        float rtrigger = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_RTRIGGER, historyPos);
 
+        processJoystickInput1(drone, throttle, roll, pitch, yaw);
+    }
+
+    // convert inputs into 0.0f - 1.0f
+    protected void processJoystickInput1(CustomDrone drone, float throttle, float roll,
+                                         float pitch, float yaw) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
 
-        if (!preferences.getBoolean("pref_throttle_center_zero", true)) {
-            throttle = (throttle * 2.0f) / 1.0f;
-        }
+        float currentThrottle = drone.getThrottle();
 
         if (preferences.getBoolean("pref_throttle_mode_gamepad", true)) {
+            // gamepad mode
             currentThrottle = currentThrottle + (throttle / 10);
-            if (currentThrottle < -1.0f) currentThrottle = -1.0f;
+            if (currentThrottle < 0.0f) currentThrottle = 0.0f;
             else if (currentThrottle > 1.0f) currentThrottle = 1.0f;
         }
         else {
-            currentThrottle = throttle;
-        }
-
-        processJoystickInput(drone, currentThrottle, roll, pitch, yaw, ltrigger, rtrigger);
-
-    }
-
-    protected abstract void processJoystickInput(Drone drone, float throttle, float roll,
-                                        float pitch, float yaw, float ltrigger, float rtrigger);
-
-    protected VehicleMode getVehicleMode(int prefValue) {
-        for (VehicleMode vehicleMode : VehicleMode.getVehicleModePerDroneType(Type.TYPE_COPTER)) {
-            if (vehicleMode.getMode() == prefValue) {
-                return vehicleMode;
+            // remote mode
+            if (!preferences.getBoolean("pref_throttle_center_zero", true)) {
+                currentThrottle = (throttle + 1.0f) / 2.0f;
+            }
+            else {
+                currentThrottle = throttle;
             }
         }
-        return VehicleMode.COPTER_STABILIZE;
+
+        drone.setThrottle(currentThrottle);
+        drone.setRoll((roll + 1.0f) / 2.0f);
+        drone.setPitch((pitch + 1.0f) / 2.0f);
+        drone.setYaw((yaw + 1.0f) / 2.0f);
+
+        processJoystickInput(drone);
     }
 
-    public boolean processKeyEvent(Drone drone, KeyEvent event, SharedPreferences preferences) {
+    // do some manual control
+    protected abstract void processJoystickInput(CustomDrone drone);
+
+    public boolean processKeyEvent(CustomDrone drone, KeyEvent event, SharedPreferences preferences) {
         try {
             if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_A) {
-                VehicleApi.getApi(drone).setVehicleMode(getVehicleMode(Integer.parseInt(preferences.getString("pref_joystick_button_a", "0"))));
+                drone.setVehicleMode(preferences.getString("pref_joystick_button_a", "0"));
                 return true;
-            } else if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_B) {
-                VehicleApi.getApi(drone).setVehicleMode(getVehicleMode(Integer.parseInt(preferences.getString("pref_joystick_button_b", "0"))));
+            }
+            if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_B) {
+                drone.setVehicleMode(preferences.getString("pref_joystick_button_b", "0"));
                 return true;
-            } else if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_X) {
-                VehicleApi.getApi(drone).setVehicleMode(getVehicleMode(Integer.parseInt(preferences.getString("pref_joystick_button_x", "0"))));
+            }
+            if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_X) {
+                drone.setVehicleMode(preferences.getString("pref_joystick_button_x", "0"));
                 return true;
-            } else if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_Y) {
-                VehicleApi.getApi(drone).setVehicleMode(getVehicleMode(Integer.parseInt(preferences.getString("pref_joystick_button_y", "0"))));
+            }
+            if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_Y) {
+                drone.setVehicleMode(preferences.getString("pref_joystick_button_y", "0"));
                 return true;
             }
 
             if (event.isLongPress()) {
                 if (Integer.parseInt(preferences.getString("pref_drone_arm", "0")) == event.getKeyCode()) {
-                    VehicleApi.getApi(drone).arm(true);
+                    drone.arm();
                 }
                 if (Integer.parseInt(preferences.getString("pref_drone_disarm", "0")) == event.getKeyCode()) {
-                    VehicleApi.getApi(drone).arm(false);
+                    drone.disarm();
+                }
+                if (Integer.parseInt(preferences.getString("pref_drone_rtl", "0")) == event.getKeyCode()) {
+                    drone.setVehicleModeRTL();
                 }
                 if (Integer.parseInt(preferences.getString("pref_drone_land", "0")) == event.getKeyCode()) {
-                    VehicleApi.getApi(drone).setVehicleMode(VehicleMode.COPTER_LAND);
+                    drone.setVehicleModeLand();
 
                 }
             }
