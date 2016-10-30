@@ -8,33 +8,23 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.preference.PreferenceManager;
-import android.support.annotation.IntegerRes;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
-import android.widget.TextView;
 
 import com.o3dr.android.client.ControlTower;
-import com.o3dr.android.client.MavlinkObserver;
 import com.o3dr.android.client.interfaces.DroneListener;
 import com.o3dr.android.client.interfaces.TowerListener;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
-import com.o3dr.services.android.lib.drone.attribute.AttributeType;
 import com.o3dr.services.android.lib.drone.connection.ConnectionParameter;
 import com.o3dr.services.android.lib.drone.connection.ConnectionType;
-import com.o3dr.services.android.lib.drone.property.Altitude;
-import com.o3dr.services.android.lib.drone.property.Attitude;
-import com.o3dr.services.android.lib.drone.property.Battery;
-import com.o3dr.services.android.lib.drone.property.Speed;
-import com.o3dr.services.android.lib.drone.property.State;
-import com.o3dr.services.android.lib.drone.property.VehicleMode;
-import com.o3dr.services.android.lib.mavlink.MavlinkMessageWrapper;
 
 import org.kinjeng.apmpilot.R;
 import org.kinjeng.apmpilot.classes.BaseJoystick;
 import org.kinjeng.apmpilot.classes.CustomDrone;
 import org.kinjeng.apmpilot.classes.RCOverrideJoystick;
+import org.kinjeng.apmpilot.views.HUDView;
 
 public class MainActivity extends Activity implements TowerListener, DroneListener {
 
@@ -46,6 +36,30 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
     protected PowerManager.WakeLock mWakeLock;
     protected ImageButton preferenceButton;
     protected ImageButton connectButton;
+    protected HUDView hudView;
+
+    protected class ControlThread extends Thread {
+        private boolean running;
+
+        public void setRunning(boolean running) {
+            this.running = running;
+        }
+
+        @Override
+        public void run() {
+            while (running) {
+                joystick.processJoystickInput1(drone);
+                updateHUD();
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    protected ControlThread controlThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +67,7 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         setContentView(R.layout.activity_main);
 
         final MainActivity mainActivity = this;
+        hudView = (HUDView) findViewById(R.id.view_hud);
 
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "APMPilot");
@@ -113,6 +128,7 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
 
         controlTower = new ControlTower(getApplicationContext());
         drone = new CustomDrone(getApplicationContext());
+        hudView.setDrone(drone);
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         int prefManualMode = 1;
@@ -129,13 +145,21 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         }
 
         updateConnectionState();
-        updateVehicleMode();
-        updateDroneInfo();
+        updateHUD();
 
+        controlThread = new ControlThread();
+        controlThread.setRunning(true);
+        controlThread.start();
     }
 
     @Override
     protected void onDestroy() {
+        controlThread.setRunning(false);
+        try {
+            controlThread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         mWakeLock.release();
         super.onDestroy();
     }
@@ -157,12 +181,14 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
     @Override
     public boolean dispatchGenericMotionEvent(MotionEvent ev) {
         if (joystick.processMotionEvent(drone, ev, PreferenceManager.getDefaultSharedPreferences(getApplicationContext()))) return true;
+        updateHUD();
         return super.dispatchGenericMotionEvent(ev);
     }
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (joystick.processKeyEvent(drone, event, PreferenceManager.getDefaultSharedPreferences(getApplicationContext()))) return true;
+        updateHUD();
         return super.dispatchKeyEvent(event);
     }
 
@@ -199,19 +225,18 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
             case AttributeEvent.STATE_CONNECTED:
             case AttributeEvent.STATE_DISCONNECTED:
                 updateConnectionState();
-                break;
-
+                updateHUD();
             case AttributeEvent.STATE_VEHICLE_MODE:
             case AttributeEvent.STATE_ARMING:
             case AttributeEvent.STATE_UPDATED:
-                updateVehicleMode();
+                updateHUD();
                 break;
 
             case AttributeEvent.TYPE_UPDATED:
             case AttributeEvent.ALTITUDE_UPDATED:
             case AttributeEvent.SPEED_UPDATED:
             case AttributeEvent.BATTERY_UPDATED:
-                updateDroneInfo();
+                updateHUD();
                 break;
 
             case AttributeEvent.ATTITUDE_UPDATED:
@@ -222,12 +247,12 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
             case AttributeEvent.GPS_POSITION:
             case AttributeEvent.GPS_COUNT:
             case AttributeEvent.WARNING_NO_GPS:
-                updateGPSInfo();
+                updateHUD();
                 break;
 
             case AttributeEvent.AUTOPILOT_ERROR:
             case AttributeEvent.AUTOPILOT_MESSAGE:
-                updateGeneralInfo();
+                updateHUD();
                 break;
 
             default:
@@ -244,50 +269,10 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
             preferenceButton.setVisibility(View.VISIBLE);
 
         }
-        updateVehicleMode();
-    }
-
-    protected void updateVehicleMode() {
-        if (drone.isConnected()) {
-            State vehicleState = this.drone.getAttribute(AttributeType.STATE);
-            ((TextView) findViewById(R.id.text_vehicle_mode)).setText(vehicleState.getVehicleMode().getLabel());
-            if (vehicleState.isArmed()) {
-                ((TextView) findViewById(R.id.text_state_arm)).setText("Armed");
-            }
-            else {
-                ((TextView) findViewById(R.id.text_state_arm)).setText("Disarmed");
-            }
-        }
-        else {
-            ((TextView) findViewById(R.id.text_vehicle_mode)).setText("Disconnected");
-            ((TextView) findViewById(R.id.text_state_arm)).setText("-");
-        }
-    }
-
-    protected void updateDroneInfo() {
-        Altitude altitude = drone.getAttribute(AttributeType.ALTITUDE);
-        ((TextView) findViewById(R.id.text_altitude)).setText("Alt: " + String.format("%3.1f", altitude.getAltitude()) + " m");
-        Speed speed = drone.getAttribute(AttributeType.SPEED);
-        ((TextView) findViewById(R.id.text_speed)).setText("Speed: " + String.format("%3.1f", speed.getGroundSpeed() * 3600 / 1000) + " km/h");
-        Battery battery = drone.getAttribute(AttributeType.BATTERY);
-        ((TextView) findViewById(R.id.text_battery_vol)).setText("Bat Vol: " + String.format("%3.1f", battery.getBatteryVoltage()) + " V");
-        ((TextView) findViewById(R.id.text_battery_cur)).setText("Bat Cur: " + String.format("%3.1f", battery.getBatteryCurrent()) + " A");
-        ((TextView) findViewById(R.id.text_throttle)).setText("Thro: " + String.format("%3.1f", drone.getThrottle()));
-        ((TextView) findViewById(R.id.text_roll)).setText("Roll: " + String.format("%3.1f", drone.getRoll()));
-        ((TextView) findViewById(R.id.text_pitch)).setText("Pitch: " + String.format("%3.1f", drone.getPitch()));
-        ((TextView) findViewById(R.id.text_yaw)).setText("Yaw: " + String.format("%3.1f", drone.getYaw()));
-    }
-
-    protected void updateGPSInfo() {
-
-    }
-
-    protected void updateGeneralInfo() {
-
     }
 
     protected void updateHUD() {
-
+        hudView.postInvalidate();
     }
 
     @Override

@@ -38,7 +38,7 @@
         <item>1</item>
     </string-array>
 
-    <string name="pref_title_throttle_mode_gamepad">Gamepad Throttle Mode</string>
+    <string name="pref_title_throttle_mode_gamepad">Gamepad Mode</string>
     <string name="pref_summary_throttle_mode_gamepad_on">Move stick up/down to increase/decrease throttle</string>
     <string name="pref_summary_throttle_mode_gamepad_off">Throttle reflects stick position</string>
 
@@ -54,7 +54,8 @@
     <string name="pref_title_joystick_button_x">Button X</string>
     <string name="pref_title_joystick_button_y">Button Y</string>
 
-    <string name="pref_title_drone_arm">Arm (Long Press)</string>
-    <string name="pref_title_drone_disarm">Disarm (Long Press)</string>
-    <string name="pref_title_drone_land">Land (Long Press)</string>
+    <string name="pref_title_drone_arm">Arm</string>
+    <string name="pref_title_drone_disarm">Disarm</string>
+    <string name="pref_title_drone_rtl">RTL</string>
+    <string name="pref_title_drone_land">Land</string>
 </resources>

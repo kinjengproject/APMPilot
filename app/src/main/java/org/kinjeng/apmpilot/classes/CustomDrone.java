@@ -1,14 +1,26 @@
 package org.kinjeng.apmpilot.classes;
 
 import android.content.Context;
+import android.os.Bundle;
+import android.widget.TextView;
 
 import com.MAVLink.common.msg_rc_channels_override;
 import com.o3dr.android.client.Drone;
+import com.o3dr.android.client.apis.ControlApi;
 import com.o3dr.android.client.apis.ExperimentalApi;
 import com.o3dr.android.client.apis.VehicleApi;
+import com.o3dr.android.client.interfaces.DroneListener;
+import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
+import com.o3dr.services.android.lib.drone.attribute.AttributeType;
+import com.o3dr.services.android.lib.drone.property.State;
 import com.o3dr.services.android.lib.drone.property.Type;
 import com.o3dr.services.android.lib.drone.property.VehicleMode;
 import com.o3dr.services.android.lib.mavlink.MavlinkMessageWrapper;
+
+import org.kinjeng.apmpilot.R;
+
+import java.util.Calendar;
+import java.util.Date;
 
 /**
  * Created by sblaksono on 30/10/2016.
@@ -27,10 +39,14 @@ public class CustomDrone extends Drone {
         super(context);
     }
 
-    protected float throttle = 0;
-    protected float roll = 0;
-    protected float pitch = 0;
-    protected float yaw = 0;
+    protected float throttle = 0.0f;
+    protected long lastThrottleUpdate = 0;
+    protected float roll = 0.5f;
+    protected long lastRollUpdate = 0;
+    protected float pitch = 0.5f;
+    protected long lastPitchUpdate = 0;
+    protected float yaw = 0.5f;
+    protected long lastYawUpdate = 0;
 
     public float getThrottle() {
         return throttle;
@@ -38,6 +54,11 @@ public class CustomDrone extends Drone {
 
     public void setThrottle(float throttle) {
         this.throttle = throttle;
+        lastThrottleUpdate = Calendar.getInstance().getTimeInMillis();
+    }
+
+    public long getLastThrottleUpdate() {
+        return lastThrottleUpdate;
     }
 
     public float getRoll() {
@@ -46,6 +67,11 @@ public class CustomDrone extends Drone {
 
     public void setRoll(float roll) {
         this.roll = roll;
+        lastRollUpdate = Calendar.getInstance().getTimeInMillis();
+    }
+
+    public long getLastRollUpdate() {
+        return lastRollUpdate;
     }
 
     public float getPitch() {
@@ -54,6 +80,11 @@ public class CustomDrone extends Drone {
 
     public void setPitch(float pitch) {
         this.pitch = pitch;
+        lastPitchUpdate = Calendar.getInstance().getTimeInMillis();
+    }
+
+    public long getLastPitchUpdate() {
+        return lastPitchUpdate;
     }
 
     public float getYaw() {
@@ -62,6 +93,11 @@ public class CustomDrone extends Drone {
 
     public void setYaw(float yaw) {
         this.yaw = yaw;
+        lastYawUpdate = Calendar.getInstance().getTimeInMillis();
+    }
+
+    public long getLastYawUpdate() {
+        return lastYawUpdate;
     }
 
     public void sendRcOverrideMsg(int[] rcOutputs) {
@@ -100,11 +136,21 @@ public class CustomDrone extends Drone {
     }
 
     public void arm() {
-        VehicleApi.getApi(this).arm(true);
+        State vehicleState = getAttribute(AttributeType.STATE);
+        if (!vehicleState.isArmed()) {
+            setThrottle(0.0f);
+            setRoll(0.5f);
+            setPitch(0.5f);
+            setYaw(0.5f);
+            VehicleApi.getApi(this).arm(true);
+        }
     }
 
     public void disarm() {
-        VehicleApi.getApi(this).arm(false);
+        State vehicleState = getAttribute(AttributeType.STATE);
+        if (!vehicleState.isFlying()) {
+            VehicleApi.getApi(this).arm(false);
+        }
     }
 
     public void setVehicleModeRTL() {

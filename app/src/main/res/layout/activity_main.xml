@@ -10,50 +10,13 @@
     <org.kinjeng.apmpilot.views.HUDView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/surfaceView"
+        android:id="@+id/view_hud"
         android:layout_weight="1" />
 
     <GridLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:columnCount="3">
-
-        <LinearLayout
-            android:orientation="horizontal"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_columnSpan="3"
-            android:layout_gravity="fill_horizontal"
-            android:padding="@dimen/activity_default_padding">
-
-            <TextView
-                android:text="Vehicle Mode"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/text_vehicle_mode"
-                android:layout_weight="1"
-                android:textColor="@android:color/white"
-                android:gravity="left" />
-
-            <TextView
-                android:text="-"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/text_general_info"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:textColor="@android:color/white" />
-
-            <TextView
-                android:text="Disarmed"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/text_state_arm"
-                android:layout_weight="1"
-                android:textColor="@android:color/white"
-                android:gravity="right" />
-
-        </LinearLayout>
 
         <LinearLayout
             android:orientation="vertical"
@@ -63,39 +26,6 @@
             android:gravity="bottom|left"
             android:padding="@dimen/activity_default_padding">
 
-
-            <TextView
-                android:text="Alt:"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/text_altitude"
-                android:gravity="top"
-                android:textColor="@android:color/white" />
-
-            <TextView
-                android:text="Speed:"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/text_speed"
-                android:gravity="top"
-                android:textColor="@android:color/white" />
-
-            <TextView
-                android:text="Bat_Vol:"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/text_battery_vol"
-                android:gravity="bottom"
-                android:layout_weight="1"
-                android:textColor="@android:color/white" />
-
-            <TextView
-                android:text="Bat Cur:"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/text_battery_cur"
-                android:gravity="bottom"
-                android:textColor="@android:color/white" />
 
             <ImageButton
                 android:layout_width="wrap_content"
@@ -125,39 +55,6 @@
             android:gravity="bottom|right"
             android:padding="@dimen/activity_default_padding"
             android:layout_gravity="fill_vertical">
-
-            <TextView
-                android:text="Thro:"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/text_throttle"
-                android:textColor="@android:color/white"
-                android:layout_gravity="left" />
-
-            <TextView
-                android:text="Roll:"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/text_roll"
-                android:textColor="@android:color/white"
-                android:layout_gravity="left" />
-
-            <TextView
-                android:text="Pitch:"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/text_pitch"
-                android:textColor="@android:color/white"
-                android:layout_gravity="left" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/text_yaw"
-                android:textColor="@android:color/white"
-                android:layout_weight="1"
-                android:text="Yaw:"
-                android:layout_gravity="left" />
 
             <ImageButton
                 android:layout_width="wrap_content"

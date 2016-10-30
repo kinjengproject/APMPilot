@@ -211,6 +211,9 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             lp = (ListPreference)findPreference("pref_drone_disarm");
             lp.setEntries(lrEntries);
             lp.setEntryValues(lrValues);
+            lp = (ListPreference)findPreference("pref_drone_rtl");
+            lp.setEntries(lrEntries);
+            lp.setEntryValues(lrValues);
             lp = (ListPreference)findPreference("pref_drone_land");
             lp.setEntries(lrEntries);
             lp.setEntryValues(lrValues);
@@ -219,7 +222,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             List<CharSequence> modeValues = new ArrayList<>();
 
             for (VehicleMode vehicleMode : VehicleMode.getVehicleModePerDroneType(Type.TYPE_COPTER)) {
-                if (vehicleMode.getMode() != VehicleMode.COPTER_LAND.getMode()) {
+                if (vehicleMode.getMode() != VehicleMode.COPTER_RTL.getMode() && vehicleMode.getMode() != VehicleMode.COPTER_LAND.getMode()) {
                     modeEntries.add(vehicleMode.getLabel());
                     modeValues.add(Integer.valueOf(vehicleMode.getMode()).toString());
                 }

@@ -7,6 +7,8 @@ import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 
+import java.util.Calendar;
+
 /**
  * Created by sblaksono on 24/10/2016.
  */
@@ -14,6 +16,12 @@ import android.view.MotionEvent;
 public abstract class BaseJoystick {
 
     protected Context context;
+    protected float x = 0.0f;
+    protected float y = 0.0f;
+    protected float z = 0.0f;
+    protected float rz = 0.0f;
+    protected float throttleRate = 0.3f;
+    protected float rpyRate = 0.3f;
 
     public BaseJoystick(Context _context) {
         context = _context;
@@ -75,15 +83,16 @@ public abstract class BaseJoystick {
         // (0,0). Use the getFlat() method to determine the range of values
         // bounding the joystick axis center.
         if (range != null) {
-            final float flat = range.getFlat();
+            // NOT USED - causing control not smooth
+            //final float flat = range.getFlat();
             final float value = historyPos < 0 ? event.getAxisValue(axis):
                     event.getHistoricalAxisValue(axis, historyPos);
 
             // Ignore axis values that are within the 'flat' region of the
             // joystick axis center.
-            if (Math.abs(value) > flat) {
+            //if (Math.abs(value) > flat) {
                 return value;
-            }
+            //}
         }
         return 0;
     }
@@ -92,41 +101,91 @@ public abstract class BaseJoystick {
     private void processJoystickInput0(CustomDrone drone, MotionEvent event, int historyPos) {
         InputDevice mInputDevice = event.getDevice();
 
-        float throttle = -getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Y, historyPos);
-        float roll = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Z, historyPos);
-        float pitch = -getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_RZ, historyPos);
-        float yaw = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_X, historyPos);
+        y = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Y, historyPos);
+        z = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Z, historyPos);
+        rz = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_RZ, historyPos);
+        x = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_X, historyPos);
 
-        processJoystickInput1(drone, throttle, roll, pitch, yaw);
+        processJoystickInput1(drone);
     }
 
-    // convert inputs into 0.0f - 1.0f
-    protected void processJoystickInput1(CustomDrone drone, float throttle, float roll,
-                                         float pitch, float yaw) {
+    // process and convert current joystick inputs into 0.0f - 1.0f
+    public void processJoystickInput1(CustomDrone drone) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
 
-        float currentThrottle = drone.getThrottle();
-
+        // throttle
+        float throttle = drone.getThrottle();
         if (preferences.getBoolean("pref_throttle_mode_gamepad", true)) {
-            // gamepad mode
-            currentThrottle = currentThrottle + (throttle / 10);
-            if (currentThrottle < 0.0f) currentThrottle = 0.0f;
-            else if (currentThrottle > 1.0f) currentThrottle = 1.0f;
-        }
-        else {
-            // remote mode
+            // gamepad mode - process throttle only when inputs interval <= 500 ms, otherwise do not change
+            long d = Calendar.getInstance().getTimeInMillis() - drone.getLastThrottleUpdate();
+            if (d <= 500) {
+                throttle = throttle + ((-y * d * throttleRate) / 1000);
+                if (throttle < 0.0f) throttle = 0.0f;
+                else if (throttle > 1.0f) throttle = 1.0f;
+            }
+        } else {
+            // other mode - using joystick throttle control, not tested yet
             if (!preferences.getBoolean("pref_throttle_center_zero", true)) {
-                currentThrottle = (throttle + 1.0f) / 2.0f;
-            }
-            else {
-                currentThrottle = throttle;
+                throttle = (y + 1.0f) / 2.0f;
+            } else {
+                throttle = y;
             }
         }
+        drone.setThrottle(throttle);
 
-        drone.setThrottle(currentThrottle);
-        drone.setRoll((roll + 1.0f) / 2.0f);
-        drone.setPitch((pitch + 1.0f) / 2.0f);
-        drone.setYaw((yaw + 1.0f) / 2.0f);
+        // roll
+        float roll = drone.getRoll();
+        float roll2 = (z + 1.0f) / 2.0f;
+        long d = Calendar.getInstance().getTimeInMillis() - drone.getLastRollUpdate();
+        if (d <= 500) {
+            if (roll > roll2) {
+                roll = roll - ((d * rpyRate) / 1000);
+                if (roll < roll2) roll = roll2;
+            }
+            else if (roll < roll2) {
+                roll = roll + ((d * rpyRate) / 1000);
+                if (roll > roll2) roll = roll2;
+            }
+            if (roll < 0.0f) roll = 0.0f;
+            else if (roll > 1.0f) roll = 1.0f;
+        }
+        drone.setRoll(roll);
+
+        // pitch
+        float pitch = drone.getPitch();
+        float pitch2 = (-rz + 1.0f) / 2.0f;
+        d = Calendar.getInstance().getTimeInMillis() - drone.getLastPitchUpdate();
+        if (d <= 500) {
+            if (pitch > pitch2) {
+                pitch = pitch - ((d * rpyRate) / 1000);
+                if (pitch < pitch2) pitch = pitch2;
+            }
+            else if (pitch < pitch2) {
+                pitch = pitch + ((d * rpyRate) / 1000);
+                if (pitch > pitch2) pitch = pitch2;
+            }
+            if (pitch < 0.0f) pitch = 0.0f;
+            else if (pitch > 1.0f) pitch = 1.0f;
+        }
+        drone.setPitch(pitch);
+
+        // yaw
+        float yaw = drone.getYaw();
+        float yaw2 = (x + 1.0f) / 2.0f;
+        d = Calendar.getInstance().getTimeInMillis() - drone.getLastYawUpdate();
+        if (d <= 500) {
+            if (yaw > yaw2) {
+                yaw = yaw - ((d * rpyRate) / 1000);
+                if (yaw < yaw2) yaw = yaw2;
+            }
+            else if (yaw < yaw2) {
+                yaw = yaw + ((d * rpyRate) / 1000);
+                if (yaw > yaw2) yaw = yaw2;
+            }
+            if (yaw < 0.0f) yaw = 0.0f;
+            else if (yaw > 1.0f) yaw = 1.0f;
+        }
+        drone.setYaw(yaw);
 
         processJoystickInput(drone);
     }
