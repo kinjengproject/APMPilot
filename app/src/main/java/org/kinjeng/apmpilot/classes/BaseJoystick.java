@@ -20,8 +20,8 @@ public abstract class BaseJoystick {
     protected float y = 0.0f;
     protected float z = 0.0f;
     protected float rz = 0.0f;
-    protected float throttleRate = 0.3f;
-    protected float rpyRate = 0.3f;
+    protected float throttleRate = 0.2f;
+    protected float rpyRate = 0.5f;
 
     public BaseJoystick(Context _context) {
         context = _context;
@@ -78,18 +78,9 @@ public abstract class BaseJoystick {
 
     private float getCenteredAxis(MotionEvent event, InputDevice device, int axis, int historyPos) {
         final InputDevice.MotionRange range = device.getMotionRange(axis, event.getSource());
-
-        // A joystick at rest does not always report an absolute position of
-        // (0,0). Use the getFlat() method to determine the range of values
-        // bounding the joystick axis center.
         if (range != null) {
-            // NOT USED - causing control not smooth
             //final float flat = range.getFlat();
-            final float value = historyPos < 0 ? event.getAxisValue(axis):
-                    event.getHistoricalAxisValue(axis, historyPos);
-
-            // Ignore axis values that are within the 'flat' region of the
-            // joystick axis center.
+            final float value = historyPos < 0 ? event.getAxisValue(axis): event.getHistoricalAxisValue(axis, historyPos);
             //if (Math.abs(value) > flat) {
                 return value;
             //}
@@ -138,7 +129,10 @@ public abstract class BaseJoystick {
         float roll2 = (z + 1.0f) / 2.0f;
         long d = Calendar.getInstance().getTimeInMillis() - drone.getLastRollUpdate();
         if (d <= 500) {
-            if (roll > roll2) {
+            if (roll2 >= 0.45f && roll2 <= 0.55f) {
+                roll = roll2;
+            }
+            else if (roll > roll2) {
                 roll = roll - ((d * rpyRate) / 1000);
                 if (roll < roll2) roll = roll2;
             }
@@ -156,7 +150,10 @@ public abstract class BaseJoystick {
         float pitch2 = (-rz + 1.0f) / 2.0f;
         d = Calendar.getInstance().getTimeInMillis() - drone.getLastPitchUpdate();
         if (d <= 500) {
-            if (pitch > pitch2) {
+            if (pitch2 >= 0.45f && pitch2 <= 0.55f) {
+                pitch = pitch2;
+            }
+            else if (pitch > pitch2) {
                 pitch = pitch - ((d * rpyRate) / 1000);
                 if (pitch < pitch2) pitch = pitch2;
             }
@@ -174,7 +171,10 @@ public abstract class BaseJoystick {
         float yaw2 = (x + 1.0f) / 2.0f;
         d = Calendar.getInstance().getTimeInMillis() - drone.getLastYawUpdate();
         if (d <= 500) {
-            if (yaw > yaw2) {
+            if (yaw2 >= 0.45f && yaw2 <= 0.55f) {
+                yaw = yaw2;
+            }
+            else if (yaw > yaw2) {
                 yaw = yaw - ((d * rpyRate) / 1000);
                 if (yaw < yaw2) yaw = yaw2;
             }

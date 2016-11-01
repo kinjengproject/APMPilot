@@ -1,22 +1,27 @@
 package org.kinjeng.apmpilot.views;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.TextView;
 
+import com.o3dr.android.client.apis.CameraApi;
 import com.o3dr.services.android.lib.drone.attribute.AttributeType;
 import com.o3dr.services.android.lib.drone.property.Altitude;
 import com.o3dr.services.android.lib.drone.property.Attitude;
 import com.o3dr.services.android.lib.drone.property.Battery;
 import com.o3dr.services.android.lib.drone.property.Speed;
 import com.o3dr.services.android.lib.drone.property.State;
+import com.o3dr.services.android.lib.model.SimpleCommandListener;
 
 import org.kinjeng.apmpilot.R;
 import org.kinjeng.apmpilot.classes.CustomDrone;
@@ -33,6 +38,8 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
     protected int dpTextSize = 16;
     protected int dpMargin = 8;
     protected float hudAngleH = 90;
+
+    protected String videoTag = "VIDEO";
 
     public HUDView(Context context) {
         super(context);
@@ -160,5 +167,22 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
+    public void startVideo() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+        try {
+            int prefUDPVideoPort = Integer.parseInt(preferences.getString("pref_udp_video_port", ""));
+            Bundle bundle = new Bundle();
+            bundle.putInt(CameraApi.VIDEO_PROPS_UDP_PORT, prefUDPVideoPort);
+            CameraApi.getApi(drone).startVideoStream(getHolder().getSurface(), videoTag, bundle,
+                    new SimpleCommandListener());
+        }
+        catch (Exception e) {
+
+        }
+    }
+
+    public void stopVideo() {
+        CameraApi.getApi(drone).stopVideoStream(videoTag, new SimpleCommandListener());
+    }
 
 }

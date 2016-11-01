@@ -36,8 +36,11 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
     protected PowerManager.WakeLock mWakeLock;
     protected ImageButton preferenceButton;
     protected ImageButton connectButton;
+    protected ImageButton rtlButton;
+    protected ImageButton landButton;
     protected HUDView hudView;
 
+    // Thread for controlling input and hud
     protected class ControlThread extends Thread {
         private boolean running;
 
@@ -51,7 +54,7 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
                 joystick.processJoystickInput1(drone);
                 updateHUD();
                 try {
-                    Thread.sleep(10);
+                    Thread.sleep(20);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -129,6 +132,22 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         controlTower = new ControlTower(getApplicationContext());
         drone = new CustomDrone(getApplicationContext());
         hudView.setDrone(drone);
+
+        rtlButton = (ImageButton) findViewById(R.id.button_rtl);
+        rtlButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drone.setVehicleModeRTL();
+            }
+        });
+
+        landButton = (ImageButton) findViewById(R.id.button_land);
+        landButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drone.setVehicleModeLand();
+            }
+        });
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         int prefManualMode = 1;
@@ -264,10 +283,10 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         connectButton.setVisibility(View.VISIBLE);
         if (drone.isConnected()) {
             preferenceButton.setVisibility(View.INVISIBLE);
-
+            hudView.startVideo();
         } else {
+            hudView.stopVideo();
             preferenceButton.setVisibility(View.VISIBLE);
-
         }
     }
 

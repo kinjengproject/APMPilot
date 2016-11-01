@@ -9,14 +9,14 @@ import android.content.Context;
 public class RCOverrideJoystick extends BaseJoystick {
 
     // hardcoded - todo : get these mavlink parameters from drone
-    protected int throttleMinRC = 1000;
-    protected int throttleMaxRC = 2000;
-    protected int rollMinRC = 1000;
-    protected int rollMaxRC = 2000;
-    protected int pitchMinRC = 1000;
-    protected int pitchMaxRC = 2000;
-    protected int yawMinRC = 1000;
-    protected int yawMaxRC = 2000;
+    protected int throttleMinRC = 1100;
+    protected int throttleMaxRC = 1900;
+    protected int rollMinRC = 1100;
+    protected int rollMaxRC = 1900;
+    protected int pitchMinRC = 1100;
+    protected int pitchMaxRC = 1900;
+    protected int yawMinRC = 1100;
+    protected int yawMaxRC = 1900;
 
     public RCOverrideJoystick(Context _context) {
         super(_context);

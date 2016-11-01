@@ -30,8 +30,16 @@
             <ImageButton
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:srcCompat="@drawable/ic_settings_32"
-                android:id="@+id/button_preference"
+                android:id="@+id/button_rtl"
+                android:minHeight="64dp"
+                android:minWidth="64dp"
+                android:layout_marginTop="@dimen/activity_default_padding"
+                android:focusable="false" />
+
+            <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/button_land"
                 android:minHeight="64dp"
                 android:minWidth="64dp"
                 android:layout_marginTop="@dimen/activity_default_padding"
@@ -55,6 +63,16 @@
             android:gravity="bottom|right"
             android:padding="@dimen/activity_default_padding"
             android:layout_gravity="fill_vertical">
+
+            <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@drawable/ic_settings_32"
+                android:id="@+id/button_preference"
+                android:minHeight="64dp"
+                android:minWidth="64dp"
+                android:layout_marginTop="@dimen/activity_default_padding"
+                android:focusable="false" />
 
             <ImageButton
                 android:layout_width="wrap_content"
