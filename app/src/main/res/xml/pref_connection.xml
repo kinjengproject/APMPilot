@@ -1,0 +1,34 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ListPreference
+        android:defaultValue="1"
+        android:title="@string/pref_title_protocol"
+        android:entries="@array/list_pref_protocol"
+        android:entryValues="@array/list_pref_protocol"
+        android:key="pref_protocol" />
+    <EditTextPreference
+        android:defaultValue="@string/pref_default_udp_port"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_udp_port"
+        android:key="pref_udp_port" />
+    <EditTextPreference
+        android:defaultValue="@string/pref_default_tcp_host"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_tcp_host"
+        android:key="pref_tcp_host" />
+    <EditTextPreference
+        android:defaultValue="@string/pref_default_tcp_port"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_tcp_port"
+        android:key="pref_tcp_port" />
+    <EditTextPreference
+        android:defaultValue="@string/pref_default_usb_baud_rate"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_usb_baud_rate"
+        android:key="pref_usb_baud_rate" />
+
+</PreferenceScreen>

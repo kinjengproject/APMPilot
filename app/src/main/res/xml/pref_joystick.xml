@@ -1,0 +1,64 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ListPreference
+        android:defaultValue="1"
+        android:title="@string/pref_title_manual_mode"
+        android:entries="@array/list_pref_manual_mode_label"
+        android:entryValues="@array/list_pref_manual_mode_value"
+        android:key="pref_manual_mode" />
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:title="@string/pref_title_throttle_mode_gamepad"
+        android:key="pref_throttle_mode_gamepad"
+        android:summaryOn="@string/pref_summary_throttle_mode_gamepad_on"
+        android:summaryOff="@string/pref_summary_throttle_mode_gamepad_off" />
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:title="@string/pref_title_throttle_center_zero"
+        android:key="pref_throttle_center_zero"
+        android:summaryOn="@string/pref_summary_throttle_center_zero_on"
+        android:summaryOff="@string/pref_summary_throttle_center_zero_off" />
+
+    <ListPreference
+        android:defaultValue="0"
+        android:title="@string/pref_title_drone_arm"
+        android:key="pref_drone_arm" />
+
+    <ListPreference
+        android:defaultValue="0"
+        android:title="@string/pref_title_drone_disarm"
+        android:key="pref_drone_disarm" />
+
+    <ListPreference
+        android:defaultValue="0"
+        android:title="@string/pref_title_drone_rtl"
+        android:key="pref_drone_rtl" />
+
+    <ListPreference
+        android:defaultValue="0"
+        android:title="@string/pref_title_drone_land"
+        android:key="pref_drone_land" />
+
+    <ListPreference
+        android:defaultValue="0"
+        android:title="@string/pref_title_joystick_button_a"
+        android:key="pref_joystick_button_a" />
+
+    <ListPreference
+        android:defaultValue="0"
+        android:title="@string/pref_title_joystick_button_b"
+        android:key="pref_joystick_button_b" />
+
+    <ListPreference
+        android:defaultValue="0"
+        android:title="@string/pref_title_joystick_button_x"
+        android:key="pref_joystick_button_x" />
+
+    <ListPreference
+        android:defaultValue="0"
+        android:title="@string/pref_title_joystick_button_y"
+        android:key="pref_joystick_button_y" />
+
+</PreferenceScreen>
