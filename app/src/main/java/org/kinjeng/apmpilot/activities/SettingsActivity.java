@@ -205,27 +205,13 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                     Integer.valueOf(KeyEvent.KEYCODE_BUTTON_R2).toString()
             };
 
-            ListPreference lp = (ListPreference)findPreference("pref_drone_arm");
-            lp.setEntries(lrEntries);
-            lp.setEntryValues(lrValues);
-            lp = (ListPreference)findPreference("pref_drone_disarm");
-            lp.setEntries(lrEntries);
-            lp.setEntryValues(lrValues);
-            lp = (ListPreference)findPreference("pref_drone_rtl");
-            lp.setEntries(lrEntries);
-            lp.setEntryValues(lrValues);
-            lp = (ListPreference)findPreference("pref_drone_land");
-            lp.setEntries(lrEntries);
-            lp.setEntryValues(lrValues);
-
+            ListPreference lp;
             List<CharSequence> modeEntries = new ArrayList<>();
             List<CharSequence> modeValues = new ArrayList<>();
 
             for (VehicleMode vehicleMode : VehicleMode.getVehicleModePerDroneType(Type.TYPE_COPTER)) {
-                if (vehicleMode.getMode() != VehicleMode.COPTER_RTL.getMode() && vehicleMode.getMode() != VehicleMode.COPTER_LAND.getMode()) {
-                    modeEntries.add(vehicleMode.getLabel());
-                    modeValues.add(Integer.valueOf(vehicleMode.getMode()).toString());
-                }
+                modeEntries.add(vehicleMode.getLabel());
+                modeValues.add(Integer.valueOf(vehicleMode.getMode()).toString());
             }
 
             CharSequence[] a = {};

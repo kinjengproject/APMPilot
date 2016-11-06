@@ -1,32 +1,25 @@
 package org.kinjeng.apmpilot.classes;
 
 import android.content.Context;
-import android.os.Bundle;
-import android.widget.TextView;
 
 import com.MAVLink.common.msg_rc_channels_override;
 import com.o3dr.android.client.Drone;
-import com.o3dr.android.client.apis.ControlApi;
 import com.o3dr.android.client.apis.ExperimentalApi;
+import com.o3dr.android.client.apis.GimbalApi;
 import com.o3dr.android.client.apis.VehicleApi;
-import com.o3dr.android.client.interfaces.DroneListener;
-import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
 import com.o3dr.services.android.lib.drone.attribute.AttributeType;
 import com.o3dr.services.android.lib.drone.property.State;
 import com.o3dr.services.android.lib.drone.property.Type;
 import com.o3dr.services.android.lib.drone.property.VehicleMode;
 import com.o3dr.services.android.lib.mavlink.MavlinkMessageWrapper;
 
-import org.kinjeng.apmpilot.R;
-
 import java.util.Calendar;
-import java.util.Date;
 
 /**
  * Created by sblaksono on 30/10/2016.
  */
 
-public class CustomDrone extends Drone {
+public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationListener {
 
     public static  int RC_OUTPUT_COUNT = 8;
 
@@ -47,6 +40,14 @@ public class CustomDrone extends Drone {
     protected long lastPitchUpdate = 0;
     protected float yaw = 0.5f;
     protected long lastYawUpdate = 0;
+    protected boolean gimbalActive = false;
+    protected long minGimbalPitch = -45;
+    protected long maxGimbalPitch = 45;
+    protected long minGimbalRoll = -45;
+    protected long maxGimbalRoll = 45;
+    protected long minGimbalYaw = -45;
+    protected long maxGimbalYaw = 45;
+    protected long lastGimbalUpdate = 0;
 
     public float getThrottle() {
         return throttle;
@@ -94,6 +95,34 @@ public class CustomDrone extends Drone {
     public void setYaw(float yaw) {
         this.yaw = yaw;
         lastYawUpdate = Calendar.getInstance().getTimeInMillis();
+    }
+
+    public boolean isGimbalActive() {
+        return gimbalActive;
+    }
+
+    public long getMinGimbalPitch() {
+        return minGimbalPitch;
+    }
+
+    public long getMaxGimbalPitch() {
+        return maxGimbalPitch;
+    }
+
+    public long getMinGimbalRoll() {
+        return minGimbalRoll;
+    }
+
+    public long getMaxGimbalRoll() {
+        return maxGimbalRoll;
+    }
+
+    public long getMinGimbalYaw() {
+        return minGimbalYaw;
+    }
+
+    public long getMaxGimbalYaw() {
+        return maxGimbalYaw;
     }
 
     public long getLastYawUpdate() {
@@ -153,12 +182,36 @@ public class CustomDrone extends Drone {
         }
     }
 
-    public void setVehicleModeRTL() {
-        VehicleApi.getApi(this).setVehicleMode(VehicleMode.COPTER_RTL);
+    public long getLastGimbalUpdate() {
+        return lastGimbalUpdate;
     }
 
-    public void setVehicleModeLand() {
-        VehicleApi.getApi(this).setVehicleMode(VehicleMode.COPTER_LAND);
+    public void setGimbalOrientation(float pitch, float roll, float yaw) {
+        GimbalApi.getApi(this).updateGimbalOrientation(pitch, roll, yaw, this);
+        lastGimbalUpdate = Calendar.getInstance().getTimeInMillis();
     }
 
+    public void triggerCamera() {
+        // to be implemented
+    }
+
+    public void startGimbalControl() {
+        GimbalApi.getApi(this).startGimbalControl(this);
+        gimbalActive = true;
+    }
+
+    public void stopGimbalControl() {
+        GimbalApi.getApi(this).stopGimbalControl(this);
+        gimbalActive = false;
+    }
+
+    @Override
+    public void onGimbalOrientationUpdate(GimbalApi.GimbalOrientation orientation) {
+
+    }
+
+    @Override
+    public void onGimbalOrientationCommandError(int error) {
+
+    }
 }

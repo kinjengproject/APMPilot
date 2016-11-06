@@ -23,6 +23,12 @@ public abstract class BaseJoystick {
     protected float throttleRate = 0.2f;
     protected float rpyRate = 0.5f;
 
+    protected float hx = 0;
+    protected float hy = 0;
+    protected float gimbalPitch = 45;
+    protected float gimbalYaw = 0;
+    protected float gimbalRate = 30;
+
     public BaseJoystick(Context _context) {
         context = _context;
     }
@@ -30,27 +36,11 @@ public abstract class BaseJoystick {
     public boolean processMotionEvent(CustomDrone drone, MotionEvent event, SharedPreferences preferences) {
 
         // Check if this event if from a D-pad and process accordingly.
-        if ((event.getSource() & InputDevice.SOURCE_DPAD) == InputDevice.SOURCE_DPAD) {
+        if ((event.getSource() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD) {
 
             float xaxis = event.getAxisValue(MotionEvent.AXIS_HAT_X);
             float yaxis = event.getAxisValue(MotionEvent.AXIS_HAT_Y);
 
-            if (Float.compare(xaxis, -1.0f) == 0) {
-                // LEFT
-
-            }
-            else if (Float.compare(xaxis, 1.0f) == 0) {
-                // RIGHT
-
-            }
-            else if (Float.compare(yaxis, -1.0f) == 0) {
-                // UP
-
-            }
-            else if (Float.compare(yaxis, 1.0f) == 0) {
-                // DOWN
-
-            }
             return true;
         }
 
@@ -92,12 +82,51 @@ public abstract class BaseJoystick {
     private void processJoystickInput0(CustomDrone drone, MotionEvent event, int historyPos) {
         InputDevice mInputDevice = event.getDevice();
 
+        hx = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_HAT_X, historyPos);
+        hy = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_HAT_Y, historyPos);
+
+        processJoystickHat1(drone);
+
         y = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Y, historyPos);
         z = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Z, historyPos);
         rz = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_RZ, historyPos);
         x = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_X, historyPos);
 
         processJoystickInput1(drone);
+    }
+
+    public void processJoystickHat1(CustomDrone drone) {
+        if (drone.isGimbalActive()) {
+            long d = Calendar.getInstance().getTimeInMillis() - drone.getLastGimbalUpdate();
+
+            if (Float.compare(hx, -1.0f) == 0) {
+                // LEFT
+                gimbalYaw += (gimbalRate * d) / 1000;
+            } else if (Float.compare(hx, 1.0f) == 0) {
+                // RIGHT
+                gimbalYaw -= (gimbalRate * d) / 1000;
+            } else if (Float.compare(hy, -1.0f) == 0) {
+                // UP
+                gimbalPitch += (gimbalRate * d) / 1000;
+            } else if (Float.compare(hy, 1.0f) == 0) {
+                // DOWN
+                gimbalPitch -= (gimbalRate * d) / 1000;
+            }
+            if (gimbalPitch < drone.getMinGimbalPitch()) {
+                gimbalPitch = drone.getMinGimbalPitch();
+            }
+            if (gimbalPitch > drone.getMaxGimbalPitch()) {
+                gimbalPitch = drone.getMaxGimbalPitch();
+            }
+            if (gimbalYaw < drone.getMinGimbalYaw()) {
+                gimbalYaw = drone.getMinGimbalYaw();
+            }
+            if (gimbalYaw > drone.getMaxGimbalYaw()) {
+                gimbalYaw = drone.getMaxGimbalYaw();
+            }
+
+            drone.setGimbalOrientation(gimbalPitch, 0, gimbalYaw);
+        }
     }
 
     // process and convert current joystick inputs into 0.0f - 1.0f
@@ -211,20 +240,22 @@ public abstract class BaseJoystick {
                 drone.setVehicleMode(preferences.getString("pref_joystick_button_y", "0"));
                 return true;
             }
-
+            if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_L1) {
+                gimbalPitch = 45;
+                gimbalYaw = 0;
+                drone.setGimbalOrientation(gimbalPitch, 0, gimbalYaw);
+                return true;
+            }
+            if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_L2) {
+                drone.triggerCamera();
+                return true;
+            }
             if (event.isLongPress()) {
-                if (Integer.parseInt(preferences.getString("pref_drone_arm", "0")) == event.getKeyCode()) {
+                if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_R2) {
                     drone.arm();
                 }
-                if (Integer.parseInt(preferences.getString("pref_drone_disarm", "0")) == event.getKeyCode()) {
+                if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_R1) {
                     drone.disarm();
-                }
-                if (Integer.parseInt(preferences.getString("pref_drone_rtl", "0")) == event.getKeyCode()) {
-                    drone.setVehicleModeRTL();
-                }
-                if (Integer.parseInt(preferences.getString("pref_drone_land", "0")) == event.getKeyCode()) {
-                    drone.setVehicleModeLand();
-
                 }
             }
 

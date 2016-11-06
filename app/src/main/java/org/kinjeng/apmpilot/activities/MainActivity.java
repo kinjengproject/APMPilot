@@ -19,12 +19,14 @@ import com.o3dr.android.client.interfaces.TowerListener;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
 import com.o3dr.services.android.lib.drone.connection.ConnectionParameter;
 import com.o3dr.services.android.lib.drone.connection.ConnectionType;
+import com.o3dr.services.android.lib.drone.property.VehicleMode;
 
 import org.kinjeng.apmpilot.R;
 import org.kinjeng.apmpilot.classes.BaseJoystick;
 import org.kinjeng.apmpilot.classes.CustomDrone;
 import org.kinjeng.apmpilot.classes.RCOverrideJoystick;
 import org.kinjeng.apmpilot.views.HUDView;
+import org.kinjeng.apmpilot.views.VideoView;
 
 public class MainActivity extends Activity implements TowerListener, DroneListener {
 
@@ -39,6 +41,7 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
     protected ImageButton rtlButton;
     protected ImageButton landButton;
     protected HUDView hudView;
+    protected VideoView videoView;
 
     // Thread for controlling input and hud
     protected class ControlThread extends Thread {
@@ -51,8 +54,8 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         @Override
         public void run() {
             while (running) {
+                joystick.processJoystickHat1(drone);
                 joystick.processJoystickInput1(drone);
-                updateHUD();
                 try {
                     Thread.sleep(20);
                 } catch (InterruptedException e) {
@@ -70,7 +73,6 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         setContentView(R.layout.activity_main);
 
         final MainActivity mainActivity = this;
-        hudView = (HUDView) findViewById(R.id.view_hud);
 
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "APMPilot");
@@ -130,14 +132,14 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         });
 
         controlTower = new ControlTower(getApplicationContext());
-        drone = new CustomDrone(getApplicationContext());
-        hudView.setDrone(drone);
+        drone = createDrone();
+        createHUD();
 
         rtlButton = (ImageButton) findViewById(R.id.button_rtl);
         rtlButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                drone.setVehicleModeRTL();
+                drone.setVehicleMode(VehicleMode.COPTER_RTL.getMode());
             }
         });
 
@@ -145,7 +147,7 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         landButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                drone.setVehicleModeLand();
+                drone.setVehicleMode(VehicleMode.COPTER_LAND.getMode());
             }
         });
 
@@ -169,6 +171,10 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         controlThread = new ControlThread();
         controlThread.setRunning(true);
         controlThread.start();
+    }
+
+    protected CustomDrone createDrone() {
+        return new CustomDrone(getApplicationContext());
     }
 
     @Override
@@ -279,19 +285,28 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         }
     }
 
-    protected void updateConnectionState() {
-        connectButton.setVisibility(View.VISIBLE);
-        if (drone.isConnected()) {
-            preferenceButton.setVisibility(View.INVISIBLE);
-            hudView.startVideo();
-        } else {
-            hudView.stopVideo();
-            preferenceButton.setVisibility(View.VISIBLE);
-        }
+    protected void createHUD() {
+        videoView = (VideoView) findViewById(R.id.view_video);
+        videoView.setDrone(drone);
+        hudView = (HUDView) findViewById(R.id.view_hud);
+        hudView.setDrone(drone);
     }
 
     protected void updateHUD() {
         hudView.postInvalidate();
+    }
+
+    protected void updateConnectionState() {
+        connectButton.setVisibility(View.VISIBLE);
+        if (drone.isConnected()) {
+            preferenceButton.setVisibility(View.INVISIBLE);
+            drone.startGimbalControl();
+            videoView.startVideo();
+        } else {
+            videoView.stopVideo();
+            drone.stopGimbalControl();
+            preferenceButton.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
