@@ -23,6 +23,8 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
 
     public static  int RC_OUTPUT_COUNT = 8;
 
+    private Context context;
+
     /**
      * Creates a Drone instance.
      *
@@ -30,6 +32,7 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
      */
     public CustomDrone(Context context) {
         super(context);
+        this.context = context;
     }
 
     protected float throttle = 0.0f;
@@ -40,13 +43,17 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
     protected long lastPitchUpdate = 0;
     protected float yaw = 0.5f;
     protected long lastYawUpdate = 0;
+
     protected boolean gimbalActive = false;
-    protected long minGimbalPitch = -45;
-    protected long maxGimbalPitch = 45;
-    protected long minGimbalRoll = -45;
-    protected long maxGimbalRoll = 45;
-    protected long minGimbalYaw = -45;
-    protected long maxGimbalYaw = 45;
+    protected float minGimbalPitch = -45;
+    protected float maxGimbalPitch = 45;
+    protected float minGimbalRoll = -45;
+    protected float maxGimbalRoll = 45;
+    protected float minGimbalYaw = -45;
+    protected float maxGimbalYaw = 45;
+    protected float gimbalRoll = 0;
+    protected float gimbalPitch = 45;
+    protected float gimbalYaw = 0;
     protected long lastGimbalUpdate = 0;
 
     public float getThrottle() {
@@ -101,27 +108,27 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
         return gimbalActive;
     }
 
-    public long getMinGimbalPitch() {
+    public float getMinGimbalPitch() {
         return minGimbalPitch;
     }
 
-    public long getMaxGimbalPitch() {
+    public float getMaxGimbalPitch() {
         return maxGimbalPitch;
     }
 
-    public long getMinGimbalRoll() {
+    public float getMinGimbalRoll() {
         return minGimbalRoll;
     }
 
-    public long getMaxGimbalRoll() {
+    public float getMaxGimbalRoll() {
         return maxGimbalRoll;
     }
 
-    public long getMinGimbalYaw() {
+    public float getMinGimbalYaw() {
         return minGimbalYaw;
     }
 
-    public long getMaxGimbalYaw() {
+    public float getMaxGimbalYaw() {
         return maxGimbalYaw;
     }
 
@@ -187,7 +194,16 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
     }
 
     public void setGimbalOrientation(float pitch, float roll, float yaw) {
+        if (pitch < getMinGimbalPitch()) pitch = getMinGimbalPitch();
+        if (pitch > getMaxGimbalPitch()) pitch = getMaxGimbalPitch();
+        if (roll < getMinGimbalRoll()) roll = getMinGimbalRoll();
+        if (roll > getMaxGimbalRoll()) roll = getMaxGimbalRoll();
+        if (yaw < getMinGimbalYaw()) yaw = getMinGimbalYaw();
+        if (yaw > getMaxGimbalYaw()) yaw = getMaxGimbalYaw();
         GimbalApi.getApi(this).updateGimbalOrientation(pitch, roll, yaw, this);
+        gimbalRoll = roll;
+        gimbalPitch = pitch;
+        gimbalYaw = yaw;
         lastGimbalUpdate = Calendar.getInstance().getTimeInMillis();
     }
 
@@ -203,6 +219,18 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
     public void stopGimbalControl() {
         GimbalApi.getApi(this).stopGimbalControl(this);
         gimbalActive = false;
+    }
+
+    public float getGimbalRoll() {
+        return gimbalRoll;
+    }
+
+    public float getGimbalPitch() {
+        return gimbalPitch;
+    }
+
+    public float getGimbalYaw() {
+        return gimbalYaw;
     }
 
     @Override

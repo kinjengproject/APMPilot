@@ -7,4 +7,11 @@
         android:title="@string/pref_title_udp_video_port"
         android:key="pref_udp_video_port" />
 
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:title="@string/pref_title_vr_mode"
+        android:key="pref_vr_mode"
+        android:summaryOn="@string/pref_summary_vr_mode_on"
+        android:summaryOff="@string/pref_summary_vr_mode_off" />
+
 </PreferenceScreen>

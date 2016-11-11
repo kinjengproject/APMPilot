@@ -18,12 +18,12 @@ public class RCOverrideJoystick extends BaseJoystick {
     protected int yawMinRC = 1100;
     protected int yawMaxRC = 1900;
 
-    public RCOverrideJoystick(Context _context) {
-        super(_context);
+    public RCOverrideJoystick(Context context, CustomTower tower, CustomDrone drone) {
+        super(context, tower, drone);
     }
 
     @Override
-    protected void processJoystickInput(CustomDrone drone) {
+    protected void processJoystickInput() {
         int[] rcOutputs = new int[CustomDrone.RC_OUTPUT_COUNT];
 
         // roll

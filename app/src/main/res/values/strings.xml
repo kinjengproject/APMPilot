@@ -42,9 +42,6 @@
     <string name="pref_summary_throttle_mode_gamepad_on">Move stick up/down to increase/decrease throttle</string>
     <string name="pref_summary_throttle_mode_gamepad_off">Throttle reflects stick position</string>
 
-    <string name="pref_title_udp_video_port">UDP Video Port</string>
-    <string name="pref_default_udp_video_port">5000</string>
-
     <string name="pref_title_throttle_center_zero">Throttle Center Zero</string>
     <string name="pref_summary_throttle_center_zero_on">Zero value when throttle stick on center</string>
     <string name="pref_summary_throttle_center_zero_off">Zero value when throttle stick fully down</string>
@@ -53,5 +50,11 @@
     <string name="pref_title_joystick_button_b">Button B</string>
     <string name="pref_title_joystick_button_x">Button X</string>
     <string name="pref_title_joystick_button_y">Button Y</string>
+
+    <string name="pref_title_udp_video_port">UDP Video Port</string>
+    <string name="pref_default_udp_video_port">5000</string>
+    <string name="pref_title_vr_mode">VR Mode</string>
+    <string name="pref_summary_vr_mode_on">Camera control using VR headset</string>
+    <string name="pref_summary_vr_mode_off">Camera control using hat buttons</string>
 
 </resources>
