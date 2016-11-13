@@ -29,8 +29,8 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
 
     protected TextPaint textPaint;
     protected Paint linePaint;
-    protected int dpTextSize = 16;
-    protected float hudAngleH = 90;
+    protected int textSize = 16;
+    protected float hudAngle = 180;
 
     public HUDView(Context context) {
         super(context);
@@ -55,7 +55,7 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
         setWillNotDraw(false);
         textPaint = new TextPaint();
         textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(dp2px(dpTextSize));
+        textPaint.setTextSize(dp2px(textSize));
         linePaint = new Paint();
         linePaint.setColor(Color.WHITE);
         linePaint.setStyle(Paint.Style.STROKE);
@@ -90,26 +90,31 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
         canvas.drawLine(x2, y1, x2, y2, linePaint);
         canvas.drawLine(x2, y2, x1, y2, linePaint);
         canvas.drawLine(x1, y2, x, y, linePaint);
-        canvas.drawText(s, x + dp2px(8), y + (dp2px(dpTextSize) * 0.6f / 2), textPaint);
+        canvas.drawText(s, x + dp2px(8), y + (dp2px(textSize) * 0.6f / 2), textPaint);
     }
 
-    protected void drawPichBar1() {
-
+    protected void drawLabel2(Canvas canvas, float x, float y, String s) {
+        float x1 = x - (textPaint.measureText("000") / 2) - dp2px(8);
+        float x2 = x + (textPaint.measureText("000") / 2) + dp2px(8);
+        float y1 = y - dp2px(8);
+        float y2 = y - dp2px(textSize + 20);
+        canvas.drawLine(x, y, x1, y1, linePaint);
+        canvas.drawLine(x1, y1, x1, y2, linePaint);
+        canvas.drawLine(x1, y2, x2, y2, linePaint);
+        canvas.drawLine(x2, y2, x2, y1, linePaint);
+        canvas.drawLine(x2, y1, x, y, linePaint);
+        canvas.drawText(s, x - (textPaint.measureText(s) / 2), y - 28, textPaint);
     }
 
-    @Override
-    protected void onDraw(Canvas canvas){
+    protected void drawHUD(Canvas canvas, float x, float y, float w, float h) {
+        float cx = w / 2;
+        float cy = h / 2;
+        float r = (w / 4) < (h / 4) ? (w / 4) : (h / 4);
+        float xx = 0;
+        float yy = 0;
         String s = "";
-        float x = 0;
-        float y = 0;
-        float cw = canvas.getWidth();
-        float ch = canvas.getHeight();
-        float a = canvas.getWidth() / 4;
-        float cx = cw / 2;
-        float b = canvas.getHeight() / 4;
-        float cy = ch / 2;
-        float r = a < b ? a : b;
-        canvas.drawLine(a, dp2px(dpTextSize + 24), a * 3, dp2px(dpTextSize + 24), linePaint);
+
+        // target circle
         canvas.drawCircle(cx, cy, dp2px(8), linePaint);
         canvas.drawLine(cx - dp2px(16), cy, cx - dp2px(8), cy, linePaint);
         canvas.drawLine(cx, cy - dp2px(16), cx, cy - dp2px(8), linePaint);
@@ -121,82 +126,81 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
             Attitude attitude = drone.getAttribute(AttributeType.ATTITUDE);
 
             // yaw
-            y = dp2px(dpTextSize + 8);
+            canvas.drawLine(x, dp2px(textSize + 24), x + w, dp2px(textSize + 24), linePaint);
+            yy = y + dp2px(textSize + 8);
             float yaw = (float) attitude.getYaw();
-            float h1 = yaw - (hudAngleH / 4);
-            float h2 = yaw + (hudAngleH / 4);
-            float h = ((int) (h1 / 15)) * 15;
-            while (h < h1) h += 15;
-            while (h <= h2) {
-                int hh = (int) (h < 0 ? 360 + h : h);
+            float a1 = yaw - (hudAngle / 2);
+            float a2 = yaw + (hudAngle / 2);
+            float a = ((int) (a1 / 15)) * 15;
+            while (a < a1) a += 15;
+            while (a <= a2) {
+                int hh = (int) (a < 0 ? 360 + a : a);
                 if (hh == 0) s = "N";
                 else if (hh == 90) s = "E";
                 else if (hh == 180) s = "S";
                 else if (hh == 270) s = "W";
                 else s = String.valueOf(hh);
-                x = a + (((h - h1) / (hudAngleH / 4)) * a);
-                canvas.drawText(s, x - (int) (textPaint.measureText(s) / 2), y, textPaint);
-                canvas.drawLine(x, dp2px(dpTextSize + 16), x, dp2px(dpTextSize + 24), linePaint);
-                h += 15;
+                xx = x + (((a - a1) / (hudAngle / 2)) * (w / 2));
+                canvas.drawText(s, xx - (int) (textPaint.measureText(s) / 2), yy, textPaint);
+                canvas.drawLine(xx, dp2px(textSize + 16), xx, dp2px(textSize + 24), linePaint);
+                a += 15;
             }
 
-            y += dp2px(dpTextSize + 32);
+            yy += dp2px(textSize + 32);
             s = String.valueOf((int) (yaw < 0 ? 360 + yaw : yaw));
-            x = cx;
-            canvas.drawLine(x, dp2px(dpTextSize + 24), x, dp2px(dpTextSize + 32), linePaint);
-            canvas.drawText(s, x - (textPaint.measureText(s) / 2), y, textPaint);
+            xx = cx;
+            canvas.drawLine(xx, dp2px(textSize + 24), xx, dp2px(textSize + 32), linePaint);
+            canvas.drawText(s, xx - (textPaint.measureText(s) / 2), yy, textPaint);
 
             // draw roll and pitch
             float roll = (float) attitude.getRoll();
             float pitch = (float) attitude.getPitch();
 
             for (float pd = -90; pd <= 90; pd += 10) {
-                float r1 = b - dp2px(32);
-                float r2 = pd == 0 ? b + dp2px(64) : b + dp2px(16);
-                PointF pt1 = rpTransform(roll, r1, 0, pitch + pd, ch);
-                PointF pt2 = rpTransform(roll, r2, 0, pitch + pd, ch);
+                float r1 = r - dp2px(32);
+                float r2 = pd == 0 ? r + dp2px(64) : r + dp2px(16);
+                PointF pt1 = rpTransform(roll, r1, 0, pitch + pd, h);
+                PointF pt2 = rpTransform(roll, r2, 0, pitch + pd, h);
                 if ((pt1.y >= -cy * 0.75f) && (pt1.y <= cy * 0.75f)) {
                     canvas.drawLine(pt1.x + cx, pt1.y + cy, pt2.x + cx, pt2.y + cy, linePaint);
                     if (pd != 0) {
                         canvas.drawText(String.format("%3.0f", -pd), pt2.x + cx + dp2px(8), pt2.y + cy + dp2px(4), textPaint);
                     }
                 }
-                pt1 = rpTransform(roll, -r1, 0, pitch + pd, ch);
-                pt2 = rpTransform(roll, -r2, 0, pitch + pd, ch);
+                pt1 = rpTransform(roll, -r1, 0, pitch + pd, h);
+                pt2 = rpTransform(roll, -r2, 0, pitch + pd, h);
                 if ((pt1.y >= -cy * 0.75f) && (pt1.y <= cy * 0.75f)) {
                     canvas.drawLine(pt1.x + cx, pt1.y + cy, pt2.x + cx, pt2.y + cy, linePaint);
                 }
             }
-            drawLabel1(canvas, cx + b + dp2px(64), cy, String.format("%3.0f", pitch));
+            drawLabel1(canvas, cx + r + dp2px(64), cy, String.format("%3.0f", pitch));
 
             // roll
             s = String.valueOf((int) attitude.getRoll());
-            x = (a * 2) - (textPaint.measureText(s) / 2);
-            y = (b * 2) + r + dp2px(dpTextSize + 8);
-            canvas.drawText(s, x, y, textPaint);
+            drawLabel2(canvas, x + cx, y + h - dp2px(textSize + 48), s);
 
             // draw vehicle mode
-            x = dp2px(8);
-            y = dp2px(dpTextSize + 8);
+            xx = x + dp2px(8);
+            yy = y + dp2px((textSize * 3) + 24);
             State vehicleState = drone.getAttribute(AttributeType.STATE);
-            canvas.drawText(vehicleState.getVehicleMode().getLabel(), x, y, textPaint);
+            canvas.drawText(vehicleState.getVehicleMode().getLabel(), xx, yy, textPaint);
 
             // draw altitude
-            y += dp2px(dpTextSize * 2);
+            yy += dp2px(textSize * 2);
             Altitude altitude = drone.getAttribute(AttributeType.ALTITUDE);
-            canvas.drawText("Alt: " + String.format("%3.1f", altitude.getAltitude()) + " m", x, y, textPaint);
+            canvas.drawText("Alt: " + String.format("%3.1f", altitude.getAltitude()) + " m", xx, yy, textPaint);
 
             // draw speed
-            y += dp2px(dpTextSize);
+            yy += dp2px(textSize);
             Speed speed = drone.getAttribute(AttributeType.SPEED);
-            canvas.drawText("Spd: " + String.format("%3.1f", speed.getGroundSpeed() * 3600 / 1000) + " km/h", x, y, textPaint);
+            canvas.drawText("Spd: " + String.format("%3.1f", speed.getGroundSpeed() * 3600 / 1000) + " km/h", xx, yy, textPaint);
 
-            // drat battery status
-            y += dp2px(dpTextSize * 2);
+            // draw battery status
+            yy += dp2px(textSize * 2);
             Battery battery = drone.getAttribute(AttributeType.BATTERY);
-            canvas.drawText("Bat: " + String.format("%3.0f", battery.getBatteryRemain()) + "%", x, y, textPaint);
-            y += dp2px(dpTextSize);
-            canvas.drawText(String.format("%3.1f", battery.getBatteryVoltage()) + " V / " + String.format("%3.1f", battery.getBatteryCurrent()) + " A", x, y, textPaint);
+            canvas.drawText("Bat: " + String.format("%3.0f", battery.getBatteryRemain()) + "%", xx, yy, textPaint);
+            yy += dp2px(textSize);
+            canvas.drawText(String.format("%3.1f", battery.getBatteryVoltage()) + " V / " + String.format("%3.1f", battery.getBatteryCurrent()) + " A", xx, yy, textPaint);
 
             // draw drone status
             s = "";
@@ -209,21 +213,28 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
             } else {
                 s = "Disconnected";
             }
-            x = canvas.getWidth() - (int) (textPaint.measureText(s) + dp2px(8));
-            y = dp2px(dpTextSize + 8);
-            canvas.drawText(s, x, y, textPaint);
+            xx = x + w - (int) (textPaint.measureText(s) + dp2px(8));
+            yy = y + dp2px((textSize * 3) + 24);
+            canvas.drawText(s, xx, yy, textPaint);
 
             // draw TRPY
-            x = canvas.getWidth() - (int) (textPaint.measureText("X: 0.00") + dp2px(8));
-            y += dp2px(dpTextSize * 2);
-            canvas.drawText("T: " + String.format("%3.2f", drone.getThrottle()), x, y, textPaint);
-            y += dp2px(dpTextSize);
-            canvas.drawText("R: " + String.format("%3.2f", drone.getRoll()), x, y, textPaint);
-            y += dp2px(dpTextSize);
-            canvas.drawText("P: " + String.format("%3.2f", drone.getPitch()), x, y, textPaint);
-            y += dp2px(dpTextSize);
-            canvas.drawText("Y: " + String.format("%3.2f", drone.getYaw()), x, y, textPaint);
+            xx = x + w - (int) (textPaint.measureText("X: 0.00") + dp2px(8));
+            yy += dp2px(textSize * 2);
+            canvas.drawText("T: " + String.format("%3.2f", drone.getThrottle()), xx, yy, textPaint);
+            yy += dp2px(textSize);
+            canvas.drawText("R: " + String.format("%3.2f", drone.getRoll()), xx, yy, textPaint);
+            yy += dp2px(textSize);
+            canvas.drawText("P: " + String.format("%3.2f", drone.getPitch()), xx, yy, textPaint);
+            yy += dp2px(textSize);
+            canvas.drawText("Y: " + String.format("%3.2f", drone.getYaw()), xx, yy, textPaint);
+
         }
+
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas){
+        drawHUD(canvas, 0, 0, canvas.getWidth(), canvas.getHeight());
     }
 
 }

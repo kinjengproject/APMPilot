@@ -52,7 +52,7 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
     protected float minGimbalYaw = -45;
     protected float maxGimbalYaw = 45;
     protected float gimbalRoll = 0;
-    protected float gimbalPitch = 45;
+    protected float gimbalPitch = 0;
     protected float gimbalYaw = 0;
     protected long lastGimbalUpdate = 0;
 

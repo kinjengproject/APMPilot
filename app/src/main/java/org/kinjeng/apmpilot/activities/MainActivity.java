@@ -300,13 +300,11 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
     protected void updateConnectionState() {
         connectButton.setVisibility(View.VISIBLE);
         if (drone.isConnected()) {
-            preferenceButton.setVisibility(View.INVISIBLE);
             drone.startGimbalControl();
             videoView.startVideo();
         } else {
             videoView.stopVideo();
             drone.stopGimbalControl();
-            preferenceButton.setVisibility(View.VISIBLE);
         }
     }
 

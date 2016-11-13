@@ -170,7 +170,7 @@ public abstract class BaseJoystick {
 
         // pitch
         float pitch = drone.getPitch();
-        float pitch2 = (-rz + 1.0f) / 2.0f;
+        float pitch2 = (rz + 1.0f) / 2.0f;
         d = Calendar.getInstance().getTimeInMillis() - drone.getLastPitchUpdate();
         if (d <= 500) {
             if (pitch2 >= 0.45f && pitch2 <= 0.55f) {
@@ -235,7 +235,7 @@ public abstract class BaseJoystick {
                 return true;
             }
             if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_L1) {
-                drone.setGimbalOrientation(45, 0, 0);
+                drone.setGimbalOrientation(0, 0, 0);
                 tower.setRefOrientation();
                 return true;
             }

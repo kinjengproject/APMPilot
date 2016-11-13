@@ -51,10 +51,15 @@
     <string name="pref_title_joystick_button_x">Button X</string>
     <string name="pref_title_joystick_button_y">Button Y</string>
 
+    <string name="pref_title_enable_video">Enable video</string>
+    <string name="pref_summary_enable_video_on">UDP video enabled</string>
+    <string name="pref_summary_enable_video_off">UDP video disabled</string>
+
     <string name="pref_title_udp_video_port">UDP Video Port</string>
     <string name="pref_default_udp_video_port">5000</string>
-    <string name="pref_title_vr_mode">VR Mode</string>
-    <string name="pref_summary_vr_mode_on">Camera control using VR headset</string>
-    <string name="pref_summary_vr_mode_off">Camera control using hat buttons</string>
+
+    <string name="pref_title_gimbal_accelerometer">Accelerometer Gimbal Control</string>
+    <string name="pref_summary_gimbal_accelerometer_on">Gimbal control using accelerometer</string>
+    <string name="pref_summary_gimbal_accelerometer_off">Gimbal control using hat buttons</string>
 
 </resources>

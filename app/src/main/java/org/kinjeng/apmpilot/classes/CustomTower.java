@@ -73,40 +73,40 @@ public class CustomTower extends ControlTower implements SensorEventListener {
     }
 
     public void updateGimbal() {
-        for (CustomDrone drone : drones) {
-            float gimbalPitch = drone.getGimbalPitch();
-            float gimbalRoll = drone.getGimbalRoll();
-            float gimbalYaw = drone.getGimbalYaw();
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        if (preferences.getBoolean("pref_gimbal_accelerometer", true)) {
             if (orientationValues != null && refOrientationValues != null) {
-                long d = Calendar.getInstance().getTimeInMillis() - lastGimbalUpdate;
+                for (CustomDrone drone : drones) {
+                    float gimbalPitch = drone.getGimbalPitch();
+                    float gimbalRoll = drone.getGimbalRoll();
+                    float gimbalYaw = drone.getGimbalYaw();
+                    long d = Calendar.getInstance().getTimeInMillis() - lastGimbalUpdate;
 
-                float yaw = (float) Math.toDegrees(orientationValues[0] - refOrientationValues[0]) * -2;
-                if (gimbalYaw < yaw) {
-                    gimbalYaw += (gimbalRate * d) / 1000;
-                }
-                else if (gimbalYaw > yaw) {
-                    gimbalYaw -= (gimbalRate * d) / 1000;
-                }
+                    float yaw = (float) Math.toDegrees(orientationValues[0] - refOrientationValues[0]) * -2;
+                    if (gimbalYaw < yaw) {
+                        gimbalYaw += (gimbalRate * d) / 1000;
+                    } else if (gimbalYaw > yaw) {
+                        gimbalYaw -= (gimbalRate * d) / 1000;
+                    }
 
-                float pitch = ((float) Math.toDegrees(orientationValues[2] - refOrientationValues[2]) * -2) - 45;
-                if (gimbalPitch < pitch) {
-                    gimbalPitch += (gimbalRate * d) / 1000;
-                }
-                else if (gimbalPitch > pitch) {
-                    gimbalPitch -= (gimbalRate * d) / 1000;
-                }
+                    float pitch = ((float) Math.toDegrees(orientationValues[2] - refOrientationValues[2]) * -2) - 45;
+                    if (gimbalPitch < pitch) {
+                        gimbalPitch += (gimbalRate * d) / 1000;
+                    } else if (gimbalPitch > pitch) {
+                        gimbalPitch -= (gimbalRate * d) / 1000;
+                    }
 
-                float roll = (float) Math.toDegrees(orientationValues[1] - refOrientationValues[1]) * -2;
-                if (gimbalRoll < roll) {
-                    gimbalRoll += (gimbalRate * d) / 1000;
+                    float roll = (float) Math.toDegrees(orientationValues[1] - refOrientationValues[1]) * -2;
+                    if (gimbalRoll < roll) {
+                        gimbalRoll += (gimbalRate * d) / 1000;
+                    } else if (gimbalRoll > roll) {
+                        gimbalRoll -= (gimbalRate * d) / 1000;
+                    }
+                    drone.setGimbalOrientation(gimbalPitch, gimbalRoll, gimbalYaw);
                 }
-                else if (gimbalRoll > roll) {
-                    gimbalRoll -= (gimbalRate * d) / 1000;
-                }
+                lastGimbalUpdate = Calendar.getInstance().getTimeInMillis();
             }
-            drone.setGimbalOrientation(gimbalPitch, gimbalRoll, gimbalYaw);
         }
-        lastGimbalUpdate = Calendar.getInstance().getTimeInMillis();
     }
 
     public void setRefOrientation() {
@@ -127,7 +127,7 @@ public class CustomTower extends ControlTower implements SensorEventListener {
 
     public void startMotionSensor() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        if (preferences.getBoolean("pref_vr_mode", true)) {
+        if (preferences.getBoolean("pref_gimbal_accelerometer", true)) {
             sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
             sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_FASTEST);
             sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorManager.SENSOR_DELAY_FASTEST);
