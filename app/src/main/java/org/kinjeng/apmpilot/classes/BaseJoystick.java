@@ -16,6 +16,9 @@ import java.util.Calendar;
 public abstract class BaseJoystick {
 
     protected Context context;
+    protected CustomTower tower;
+    protected CustomDrone drone;
+
     protected float x = 0.0f;
     protected float y = 0.0f;
     protected float z = 0.0f;
@@ -25,15 +28,15 @@ public abstract class BaseJoystick {
 
     protected float hx = 0;
     protected float hy = 0;
-    protected float gimbalPitch = 45;
-    protected float gimbalYaw = 0;
     protected float gimbalRate = 30;
 
-    public BaseJoystick(Context _context) {
-        context = _context;
+    public BaseJoystick(Context context, CustomTower tower, CustomDrone drone) {
+        this.context = context;
+        this.tower = tower;
+        this.drone = drone;
     }
 
-    public boolean processMotionEvent(CustomDrone drone, MotionEvent event, SharedPreferences preferences) {
+    public boolean processMotionEvent(MotionEvent event, SharedPreferences preferences) {
 
         // Check if this event if from a D-pad and process accordingly.
         if ((event.getSource() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD) {
@@ -55,11 +58,11 @@ public abstract class BaseJoystick {
             // earliest historical position in the batch
             for (int i = 0; i < historySize; i++) {
                 // Process the event at historical position i
-                processJoystickInput0(drone, event, i);
+                processJoystickInput0(event, i);
             }
 
             // Process the current movement sample in the batch (position -1)
-            processJoystickInput0(drone, event, -1);
+            processJoystickInput0(event, -1);
             return true;
         }
 
@@ -79,25 +82,28 @@ public abstract class BaseJoystick {
     }
 
     // translate inputs from joystick (from -1.0f to 1.0f)
-    private void processJoystickInput0(CustomDrone drone, MotionEvent event, int historyPos) {
+    private void processJoystickInput0(MotionEvent event, int historyPos) {
         InputDevice mInputDevice = event.getDevice();
 
         hx = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_HAT_X, historyPos);
         hy = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_HAT_Y, historyPos);
 
-        processJoystickHat1(drone);
+        processJoystickHat1();
 
         y = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Y, historyPos);
         z = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Z, historyPos);
         rz = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_RZ, historyPos);
         x = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_X, historyPos);
 
-        processJoystickInput1(drone);
+        processJoystickInput1();
     }
 
-    public void processJoystickHat1(CustomDrone drone) {
+    public void processJoystickHat1() {
         if (drone.isGimbalActive()) {
             long d = Calendar.getInstance().getTimeInMillis() - drone.getLastGimbalUpdate();
+
+            float gimbalPitch = drone.getGimbalPitch();
+            float gimbalYaw = drone.getGimbalYaw();
 
             if (Float.compare(hx, -1.0f) == 0) {
                 // LEFT
@@ -112,25 +118,13 @@ public abstract class BaseJoystick {
                 // DOWN
                 gimbalPitch -= (gimbalRate * d) / 1000;
             }
-            if (gimbalPitch < drone.getMinGimbalPitch()) {
-                gimbalPitch = drone.getMinGimbalPitch();
-            }
-            if (gimbalPitch > drone.getMaxGimbalPitch()) {
-                gimbalPitch = drone.getMaxGimbalPitch();
-            }
-            if (gimbalYaw < drone.getMinGimbalYaw()) {
-                gimbalYaw = drone.getMinGimbalYaw();
-            }
-            if (gimbalYaw > drone.getMaxGimbalYaw()) {
-                gimbalYaw = drone.getMaxGimbalYaw();
-            }
 
             drone.setGimbalOrientation(gimbalPitch, 0, gimbalYaw);
         }
     }
 
     // process and convert current joystick inputs into 0.0f - 1.0f
-    public void processJoystickInput1(CustomDrone drone) {
+    public void processJoystickInput1() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
 
         // throttle
@@ -176,7 +170,7 @@ public abstract class BaseJoystick {
 
         // pitch
         float pitch = drone.getPitch();
-        float pitch2 = (-rz + 1.0f) / 2.0f;
+        float pitch2 = (rz + 1.0f) / 2.0f;
         d = Calendar.getInstance().getTimeInMillis() - drone.getLastPitchUpdate();
         if (d <= 500) {
             if (pitch2 >= 0.45f && pitch2 <= 0.55f) {
@@ -216,13 +210,13 @@ public abstract class BaseJoystick {
         }
         drone.setYaw(yaw);
 
-        processJoystickInput(drone);
+        processJoystickInput();
     }
 
     // do some manual control
-    protected abstract void processJoystickInput(CustomDrone drone);
+    protected abstract void processJoystickInput();
 
-    public boolean processKeyEvent(CustomDrone drone, KeyEvent event, SharedPreferences preferences) {
+    public boolean processKeyEvent(KeyEvent event, SharedPreferences preferences) {
         try {
             if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_A) {
                 drone.setVehicleMode(preferences.getString("pref_joystick_button_a", "0"));
@@ -241,9 +235,8 @@ public abstract class BaseJoystick {
                 return true;
             }
             if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_L1) {
-                gimbalPitch = 45;
-                gimbalYaw = 0;
-                drone.setGimbalOrientation(gimbalPitch, 0, gimbalYaw);
+                drone.setGimbalOrientation(0, 0, 0);
+                tower.setRefOrientation();
                 return true;
             }
             if (event.getKeyCode() == KeyEvent.KEYCODE_BUTTON_L2) {

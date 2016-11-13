@@ -13,7 +13,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
 
-import com.o3dr.android.client.ControlTower;
 import com.o3dr.android.client.interfaces.DroneListener;
 import com.o3dr.android.client.interfaces.TowerListener;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
@@ -24,6 +23,7 @@ import com.o3dr.services.android.lib.drone.property.VehicleMode;
 import org.kinjeng.apmpilot.R;
 import org.kinjeng.apmpilot.classes.BaseJoystick;
 import org.kinjeng.apmpilot.classes.CustomDrone;
+import org.kinjeng.apmpilot.classes.CustomTower;
 import org.kinjeng.apmpilot.classes.RCOverrideJoystick;
 import org.kinjeng.apmpilot.views.HUDView;
 import org.kinjeng.apmpilot.views.VideoView;
@@ -31,7 +31,7 @@ import org.kinjeng.apmpilot.views.VideoView;
 public class MainActivity extends Activity implements TowerListener, DroneListener {
 
     protected BaseJoystick joystick;
-    protected ControlTower controlTower;
+    protected CustomTower tower;
     protected CustomDrone drone;
     protected final Handler handler = new Handler();
 
@@ -54,8 +54,9 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         @Override
         public void run() {
             while (running) {
-                joystick.processJoystickHat1(drone);
-                joystick.processJoystickInput1(drone);
+                joystick.processJoystickHat1();
+                joystick.processJoystickInput1();
+                tower.updateGimbal();
                 try {
                     Thread.sleep(20);
                 } catch (InterruptedException e) {
@@ -131,7 +132,7 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
             }
         });
 
-        controlTower = new ControlTower(getApplicationContext());
+        tower = new CustomTower(getApplicationContext());
         drone = createDrone();
         createHUD();
 
@@ -159,7 +160,7 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         catch (Exception e) {
         }
         if (prefManualMode == 1) {
-            joystick = new RCOverrideJoystick(getApplicationContext());
+            joystick = new RCOverrideJoystick(getApplicationContext(), tower, drone);
         }
         else {
 
@@ -205,14 +206,14 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
 
     @Override
     public boolean dispatchGenericMotionEvent(MotionEvent ev) {
-        if (joystick.processMotionEvent(drone, ev, PreferenceManager.getDefaultSharedPreferences(getApplicationContext()))) return true;
+        if (joystick.processMotionEvent(ev, PreferenceManager.getDefaultSharedPreferences(getApplicationContext()))) return true;
         updateHUD();
         return super.dispatchGenericMotionEvent(ev);
     }
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        if (joystick.processKeyEvent(drone, event, PreferenceManager.getDefaultSharedPreferences(getApplicationContext()))) return true;
+        if (joystick.processKeyEvent(event, PreferenceManager.getDefaultSharedPreferences(getApplicationContext()))) return true;
         updateHUD();
         return super.dispatchKeyEvent(event);
     }
@@ -220,7 +221,7 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
     @Override
     protected void onStart() {
         super.onStart();
-        controlTower.connect(this);
+        tower.connect(this);
     }
 
     @Override
@@ -228,14 +229,14 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         if (drone.isConnected()) {
             drone.disconnect();
         }
-        controlTower.unregisterDrone(drone);
-        controlTower.disconnect();
+        tower.unregisterDrone(drone);
+        tower.disconnect();
         super.onStop();
     }
 
     @Override
     public void onTowerConnected() {
-        controlTower.registerDrone(drone, handler);
+        tower.registerDrone(drone, handler);
         drone.registerDroneListener(this);
     }
 
@@ -299,19 +300,29 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
     protected void updateConnectionState() {
         connectButton.setVisibility(View.VISIBLE);
         if (drone.isConnected()) {
-            preferenceButton.setVisibility(View.INVISIBLE);
             drone.startGimbalControl();
             videoView.startVideo();
         } else {
             videoView.stopVideo();
             drone.stopGimbalControl();
-            preferenceButton.setVisibility(View.VISIBLE);
         }
     }
 
     @Override
     public void onDroneServiceInterrupted(String errorMsg) {
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        tower.startMotionSensor();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        tower.stopMotionSensor();
     }
 
 }

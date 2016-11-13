@@ -23,7 +23,7 @@
         android:columnCount="3">
 
         <LinearLayout
-            android:orientation="vertical"
+            android:orientation="horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="fill_vertical"
@@ -34,6 +34,8 @@
             <ImageButton
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:src="@drawable/ic_house_32"
+                android:background="@null"
                 android:id="@+id/button_rtl"
                 android:minHeight="64dp"
                 android:minWidth="64dp"
@@ -43,6 +45,8 @@
             <ImageButton
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:src="@drawable/ic_down_32"
+                android:background="@null"
                 android:id="@+id/button_land"
                 android:minHeight="64dp"
                 android:minWidth="64dp"
@@ -61,7 +65,7 @@
         </LinearLayout>
 
         <LinearLayout
-            android:orientation="vertical"
+            android:orientation="horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="bottom|right"
@@ -71,7 +75,8 @@
             <ImageButton
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:srcCompat="@drawable/ic_settings_32"
+                android:src="@drawable/ic_settings_32"
+                android:background="@null"
                 android:id="@+id/button_preference"
                 android:minHeight="64dp"
                 android:minWidth="64dp"
@@ -81,7 +86,8 @@
             <ImageButton
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:srcCompat="@drawable/ic_wifi_32"
+                android:src="@drawable/ic_wifi_32"
+                android:background="@null"
                 android:id="@+id/button_connect"
                 android:minWidth="64dp"
                 android:minHeight="64dp"

@@ -1,10 +1,24 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:title="@string/pref_title_enable_video"
+        android:key="pref_enable_video"
+        android:summaryOn="@string/pref_summary_enable_video_on"
+        android:summaryOff="@string/pref_summary_enable_video_off" />
+
     <EditTextPreference
         android:defaultValue="@string/pref_default_udp_video_port"
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:title="@string/pref_title_udp_video_port"
         android:key="pref_udp_video_port" />
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:title="@string/pref_title_gimbal_accelerometer"
+        android:key="pref_gimbal_accelerometer"
+        android:summaryOn="@string/pref_summary_gimbal_accelerometer_on"
+        android:summaryOff="@string/pref_summary_gimbal_accelerometer_off" />
 
 </PreferenceScreen>
