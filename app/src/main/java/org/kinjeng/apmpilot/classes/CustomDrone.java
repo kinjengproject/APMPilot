@@ -4,10 +4,13 @@ import android.content.Context;
 
 import com.MAVLink.common.msg_rc_channels_override;
 import com.o3dr.android.client.Drone;
+import com.o3dr.android.client.MavlinkObserver;
 import com.o3dr.android.client.apis.ExperimentalApi;
 import com.o3dr.android.client.apis.GimbalApi;
 import com.o3dr.android.client.apis.VehicleApi;
 import com.o3dr.services.android.lib.drone.attribute.AttributeType;
+import com.o3dr.services.android.lib.drone.connection.ConnectionParameter;
+import com.o3dr.services.android.lib.drone.connection.ConnectionType;
 import com.o3dr.services.android.lib.drone.property.State;
 import com.o3dr.services.android.lib.drone.property.Type;
 import com.o3dr.services.android.lib.drone.property.VehicleMode;
@@ -35,14 +38,24 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
         this.context = context;
     }
 
+    protected short rcThrottleMin = 1100;
+    protected short rcThrottleMax = 1900;
+    protected short rcRollMin = 1100;
+    protected short rcRollMax = 1900;
+    protected short rcPitchMin = 1100;
+    protected short rcPitchMax = 1900;
+    protected short rcYawMin = 1100;
+    protected short rcYawMax = 1900;
+    protected short rcChannel5 = 0;
+    protected short rcChannel6 = 0;
+    protected short rcChannel7 = 0;
+    protected short rcChannel8 = 0;
+
     protected float throttle = 0.0f;
-    protected long lastThrottleUpdate = 0;
     protected float roll = 0.5f;
-    protected long lastRollUpdate = 0;
     protected float pitch = 0.5f;
-    protected long lastPitchUpdate = 0;
     protected float yaw = 0.5f;
-    protected long lastYawUpdate = 0;
+    protected long lastTRPYUpdate = 0;
 
     protected boolean gimbalActive = false;
     protected float minGimbalPitch = -45;
@@ -60,48 +73,52 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
         return throttle;
     }
 
-    public void setThrottle(float throttle) {
-        this.throttle = throttle;
-        lastThrottleUpdate = Calendar.getInstance().getTimeInMillis();
-    }
-
-    public long getLastThrottleUpdate() {
-        return lastThrottleUpdate;
-    }
-
     public float getRoll() {
         return roll;
-    }
-
-    public void setRoll(float roll) {
-        this.roll = roll;
-        lastRollUpdate = Calendar.getInstance().getTimeInMillis();
-    }
-
-    public long getLastRollUpdate() {
-        return lastRollUpdate;
     }
 
     public float getPitch() {
         return pitch;
     }
 
-    public void setPitch(float pitch) {
-        this.pitch = pitch;
-        lastPitchUpdate = Calendar.getInstance().getTimeInMillis();
-    }
-
-    public long getLastPitchUpdate() {
-        return lastPitchUpdate;
-    }
-
     public float getYaw() {
         return yaw;
     }
 
-    public void setYaw(float yaw) {
-        this.yaw = yaw;
-        lastYawUpdate = Calendar.getInstance().getTimeInMillis();
+    public long getLastTRPYUpdate() {
+        return lastTRPYUpdate;
+    }
+
+    public void setTRPY(float throttle, float roll, float pitch, float yaw) {
+        if ((this.throttle != throttle) || (this.roll != roll) || (this.pitch != pitch) || (this.yaw != yaw)) {
+            this.throttle = throttle;
+            this.roll = roll;
+            this.pitch = pitch;
+            this.yaw = yaw;
+
+            if (Settings.getInt("pref_manual_mode", 1) == 1) {
+
+                msg_rc_channels_override msg = new msg_rc_channels_override();
+                msg.chan1_raw = rcRollMin + ((short) (roll * (rcRollMax - rcRollMin)));;
+                msg.chan2_raw = rcPitchMin + ((int) (pitch * (rcPitchMax - rcPitchMin)));
+                msg.chan3_raw = rcThrottleMin + ((int) (throttle * (rcThrottleMax - rcThrottleMin)));
+                msg.chan4_raw = rcYawMin + ((int) (yaw * (rcYawMax - rcYawMin)));
+                msg.chan5_raw = rcChannel5;
+                msg.chan6_raw = rcChannel6;
+                msg.chan7_raw = rcChannel7;
+                msg.chan8_raw = rcChannel8;
+                msg.target_system = 0;
+                msg.target_component = 0;
+
+                ExperimentalApi.getApi(this).sendMavlinkMessage(new MavlinkMessageWrapper(msg));
+            }
+
+        }
+        lastTRPYUpdate = Calendar.getInstance().getTimeInMillis();
+    }
+
+    public void sendRcOverrideMsg(int[] rcOutputs) {
+
     }
 
     public boolean isGimbalActive() {
@@ -132,27 +149,6 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
         return maxGimbalYaw;
     }
 
-    public long getLastYawUpdate() {
-        return lastYawUpdate;
-    }
-
-    public void sendRcOverrideMsg(int[] rcOutputs) {
-
-        msg_rc_channels_override msg = new msg_rc_channels_override();
-        msg.chan1_raw = (short)rcOutputs[0];
-        msg.chan2_raw = (short)rcOutputs[1];
-        msg.chan3_raw = (short)rcOutputs[2];
-        msg.chan4_raw = (short)rcOutputs[3];
-        msg.chan5_raw = (short)rcOutputs[4];
-        msg.chan6_raw = (short)rcOutputs[5];
-        msg.chan7_raw = (short)rcOutputs[6];
-        msg.chan8_raw = (short)rcOutputs[7];
-        msg.target_system = 0;
-        msg.target_component = 0;
-
-        ExperimentalApi.getApi(this).sendMavlinkMessage(new MavlinkMessageWrapper(msg));
-    }
-
     // get vehicle mode
     protected VehicleMode getVehicleMode(int mode) {
         for (VehicleMode vehicleMode : VehicleMode.getVehicleModePerDroneType(Type.TYPE_COPTER)) {
@@ -174,10 +170,7 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
     public void arm() {
         State vehicleState = getAttribute(AttributeType.STATE);
         if (!vehicleState.isArmed()) {
-            setThrottle(0.0f);
-            setRoll(0.5f);
-            setPitch(0.5f);
-            setYaw(0.5f);
+            setTRPY(0.0f, 0.5f, 0.5f, 0.5f);
             VehicleApi.getApi(this).arm(true);
         }
     }
@@ -200,10 +193,12 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
         if (roll > getMaxGimbalRoll()) roll = getMaxGimbalRoll();
         if (yaw < getMinGimbalYaw()) yaw = getMinGimbalYaw();
         if (yaw > getMaxGimbalYaw()) yaw = getMaxGimbalYaw();
-        GimbalApi.getApi(this).updateGimbalOrientation(pitch, roll, yaw, this);
-        gimbalRoll = roll;
-        gimbalPitch = pitch;
-        gimbalYaw = yaw;
+        if ((gimbalPitch != pitch) || (gimbalRoll != roll) || (gimbalYaw != yaw)) {
+            GimbalApi.getApi(this).updateGimbalOrientation(pitch, roll, yaw, this);
+            gimbalRoll = roll;
+            gimbalPitch = pitch;
+            gimbalYaw = yaw;
+        }
         lastGimbalUpdate = Calendar.getInstance().getTimeInMillis();
     }
 
@@ -217,8 +212,8 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
     }
 
     public void stopGimbalControl() {
-        GimbalApi.getApi(this).stopGimbalControl(this);
         gimbalActive = false;
+        GimbalApi.getApi(this).stopGimbalControl(this);
     }
 
     public float getGimbalRoll() {
@@ -235,11 +230,63 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
 
     @Override
     public void onGimbalOrientationUpdate(GimbalApi.GimbalOrientation orientation) {
-
+        gimbalRoll = orientation.getRoll();
+        gimbalPitch = orientation.getPitch();
+        gimbalYaw = orientation.getYaw();
     }
 
     @Override
     public void onGimbalOrientationCommandError(int error) {
-
+        if (gimbalActive) {
+            stopGimbalControl();
+            startGimbalControl();
+        }
+        else {
+            stopGimbalControl();
+        }
     }
+
+    @Override
+    public void disconnect() {
+        if (gimbalActive) {
+            stopGimbalControl();
+        }
+        super.disconnect();
+    }
+
+    public void connect() {
+        String prefProtocol = Settings.getString("pref_protocol", "");
+        if (prefProtocol.equals("UDP")) {
+            int udpPort = ConnectionType.DEFAULT_UDP_SERVER_PORT;
+            try {
+                udpPort = Integer.parseInt(Settings.getString("pref_udp_port", ""));
+            }
+            catch (Exception e) {
+            }
+            ConnectionParameter connectionParams = ConnectionParameter.newUdpConnection(udpPort, null);
+            connect(connectionParams);
+        }
+        else if (prefProtocol.equals("TCP")) {
+            String tcpHost = Settings.getString("pref_tcp_host", "");
+            int tcpPort = ConnectionType.DEFAULT_TCP_SERVER_PORT;
+            try {
+                tcpPort = Settings.getInt("pref_tcp_port", 0);
+            }
+            catch (Exception e) {
+            }
+            ConnectionParameter connectionParams = ConnectionParameter.newTcpConnection(tcpHost, tcpPort, null);
+            connect(connectionParams);
+        }
+        else if (prefProtocol.equals("USB")) {
+            int usbBaudRate = ConnectionType.DEFAULT_USB_BAUD_RATE;
+            try {
+                usbBaudRate = Settings.getInt("pref_usb_baud_rate", 0);
+            }
+            catch (Exception e) {
+            }
+            ConnectionParameter connectionParams = ConnectionParameter.newUsbConnection(usbBaudRate, null);
+            connect(connectionParams);
+        }
+    }
+
 }

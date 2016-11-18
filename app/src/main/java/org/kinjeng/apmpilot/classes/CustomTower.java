@@ -1,13 +1,11 @@
 package org.kinjeng.apmpilot.classes;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Handler;
-import android.preference.PreferenceManager;
 
 import com.o3dr.android.client.ControlTower;
 import com.o3dr.android.client.Drone;
@@ -73,8 +71,7 @@ public class CustomTower extends ControlTower implements SensorEventListener {
     }
 
     public void updateGimbal() {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        if (preferences.getBoolean("pref_gimbal_accelerometer", true)) {
+        if (Settings.getBoolean("pref_gimbal_accelerometer", true)) {
             if (orientationValues != null && refOrientationValues != null) {
                 for (CustomDrone drone : drones) {
                     float gimbalPitch = drone.getGimbalPitch();
@@ -126,8 +123,7 @@ public class CustomTower extends ControlTower implements SensorEventListener {
     }
 
     public void startMotionSensor() {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        if (preferences.getBoolean("pref_gimbal_accelerometer", true)) {
+        if (Settings.getBoolean("pref_gimbal_accelerometer", true)) {
             sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
             sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_FASTEST);
             sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorManager.SENSOR_DELAY_FASTEST);

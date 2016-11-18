@@ -3,11 +3,9 @@ package org.kinjeng.apmpilot.activities;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
-import android.preference.PreferenceManager;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -16,15 +14,14 @@ import android.widget.ImageButton;
 import com.o3dr.android.client.interfaces.DroneListener;
 import com.o3dr.android.client.interfaces.TowerListener;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
-import com.o3dr.services.android.lib.drone.connection.ConnectionParameter;
-import com.o3dr.services.android.lib.drone.connection.ConnectionType;
 import com.o3dr.services.android.lib.drone.property.VehicleMode;
 
 import org.kinjeng.apmpilot.R;
 import org.kinjeng.apmpilot.classes.BaseJoystick;
 import org.kinjeng.apmpilot.classes.CustomDrone;
 import org.kinjeng.apmpilot.classes.CustomTower;
-import org.kinjeng.apmpilot.classes.RCOverrideJoystick;
+import org.kinjeng.apmpilot.classes.PhysicalJoystick;
+import org.kinjeng.apmpilot.classes.Settings;
 import org.kinjeng.apmpilot.views.HUDView;
 import org.kinjeng.apmpilot.views.VideoView;
 
@@ -57,8 +54,9 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
                 joystick.processJoystickHat1();
                 joystick.processJoystickInput1();
                 tower.updateGimbal();
+                updateDisplay();
                 try {
-                    Thread.sleep(20);
+                    Thread.sleep(30);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -71,6 +69,7 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Settings.init(getApplicationContext());
         setContentView(R.layout.activity_main);
 
         final MainActivity mainActivity = this;
@@ -95,46 +94,14 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
                     drone.disconnect();
                 }
                 else {
-                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-                    String prefProtocol = preferences.getString("pref_protocol", "");
-                    if (prefProtocol.equals("UDP")) {
-                        int udpPort = ConnectionType.DEFAULT_UDP_SERVER_PORT;
-                        try {
-                            udpPort = Integer.parseInt(preferences.getString("pref_udp_port", ""));
-                        }
-                        catch (Exception e) {
-                        }
-                        ConnectionParameter connectionParams = ConnectionParameter.newUdpConnection(udpPort, null);
-                        drone.connect(connectionParams);
-                    }
-                    else if (prefProtocol.equals("TCP")) {
-                        String tcpHost = preferences.getString("pref_tcp_host", "");
-                        int tcpPort = ConnectionType.DEFAULT_TCP_SERVER_PORT;
-                        try {
-                            tcpPort = Integer.parseInt(preferences.getString("pref_tcp_port", ""));
-                        }
-                        catch (Exception e) {
-                        }
-                        ConnectionParameter connectionParams = ConnectionParameter.newTcpConnection(tcpHost, tcpPort, null);
-                        drone.connect(connectionParams);
-                    }
-                    else if (prefProtocol.equals("USB")) {
-                        int usbBaudRate = ConnectionType.DEFAULT_USB_BAUD_RATE;
-                        try {
-                            usbBaudRate = Integer.parseInt(preferences.getString("pref_usb_baud_rate", ""));
-                        }
-                        catch (Exception e) {
-                        }
-                        ConnectionParameter connectionParams = ConnectionParameter.newUsbConnection(usbBaudRate, null);
-                        drone.connect(connectionParams);
-                    }
+                    drone.connect();
                 }
             }
         });
 
         tower = new CustomTower(getApplicationContext());
         drone = createDrone();
-        createHUD();
+        createDisplay();
 
         rtlButton = (ImageButton) findViewById(R.id.button_rtl);
         rtlButton.setOnClickListener(new View.OnClickListener() {
@@ -152,22 +119,10 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
             }
         });
 
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        int prefManualMode = 1;
-        try {
-            prefManualMode = Integer.parseInt(preferences.getString("pref_manual_mode", "1"));
-        }
-        catch (Exception e) {
-        }
-        if (prefManualMode == 1) {
-            joystick = new RCOverrideJoystick(getApplicationContext(), tower, drone);
-        }
-        else {
-
-        }
+        joystick = new PhysicalJoystick(tower, drone);
 
         updateConnectionState();
-        updateHUD();
+        updateDisplay();
 
         controlThread = new ControlThread();
         controlThread.setRunning(true);
@@ -206,15 +161,19 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
 
     @Override
     public boolean dispatchGenericMotionEvent(MotionEvent ev) {
-        if (joystick.processMotionEvent(ev, PreferenceManager.getDefaultSharedPreferences(getApplicationContext()))) return true;
-        updateHUD();
+        if (joystick.processMotionEvent(ev)) {
+            updateDisplay();
+            return true;
+        }
         return super.dispatchGenericMotionEvent(ev);
     }
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        if (joystick.processKeyEvent(event, PreferenceManager.getDefaultSharedPreferences(getApplicationContext()))) return true;
-        updateHUD();
+        if (joystick.processKeyEvent(event)) {
+            updateDisplay();
+            return true;
+        }
         return super.dispatchKeyEvent(event);
     }
 
@@ -251,34 +210,34 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
             case AttributeEvent.STATE_CONNECTED:
             case AttributeEvent.STATE_DISCONNECTED:
                 updateConnectionState();
-                updateHUD();
+                updateDisplay();
             case AttributeEvent.STATE_VEHICLE_MODE:
             case AttributeEvent.STATE_ARMING:
             case AttributeEvent.STATE_UPDATED:
-                updateHUD();
+                updateDisplay();
                 break;
 
             case AttributeEvent.TYPE_UPDATED:
             case AttributeEvent.ALTITUDE_UPDATED:
             case AttributeEvent.SPEED_UPDATED:
             case AttributeEvent.BATTERY_UPDATED:
-                updateHUD();
+                updateDisplay();
                 break;
 
             case AttributeEvent.ATTITUDE_UPDATED:
-                updateHUD();
+                updateDisplay();
                 break;
 
             case AttributeEvent.GPS_FIX:
             case AttributeEvent.GPS_POSITION:
             case AttributeEvent.GPS_COUNT:
             case AttributeEvent.WARNING_NO_GPS:
-                updateHUD();
+                updateDisplay();
                 break;
 
             case AttributeEvent.AUTOPILOT_ERROR:
             case AttributeEvent.AUTOPILOT_MESSAGE:
-                updateHUD();
+                updateDisplay();
                 break;
 
             default:
@@ -286,25 +245,49 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         }
     }
 
-    protected void createHUD() {
+    protected void createDisplay() {
         videoView = (VideoView) findViewById(R.id.view_video);
         videoView.setDrone(drone);
         hudView = (HUDView) findViewById(R.id.view_hud);
         hudView.setDrone(drone);
     }
 
-    protected void updateHUD() {
-        hudView.postInvalidate();
+    protected void updateDisplay() {
+        if (Settings.getInt("pref_display_mode", 1) == 2) {
+            // 2 : Video
+            if (videoView.getVisibility() != View.VISIBLE) {
+                videoView.setVisibility(View.VISIBLE);
+            }
+            if (hudView.getVisibility() != View.VISIBLE) {
+                hudView.setVisibility(View.VISIBLE);
+            }
+            hudView.postInvalidate();
+        }
+        else {
+            // 1 or default : Google Map
+            if (videoView.getVisibility() != View.INVISIBLE) {
+                videoView.stopVideo();
+                videoView.setVisibility(View.INVISIBLE);
+            }
+            if (hudView.getVisibility() != View.INVISIBLE) {
+                hudView.setVisibility(View.INVISIBLE);
+            }
+
+
+
+        }
     }
 
     protected void updateConnectionState() {
         connectButton.setVisibility(View.VISIBLE);
         if (drone.isConnected()) {
+            preferenceButton.setVisibility(View.INVISIBLE);
             drone.startGimbalControl();
             videoView.startVideo();
         } else {
             videoView.stopVideo();
             drone.stopGimbalControl();
+            preferenceButton.setVisibility(View.VISIBLE);
         }
     }
 

@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">APMPilot</string>
 
+    <string name="api_map_key">AIzaSyACbBXBpVsXD6qIKGW8-Ndd-lKNeoLz9XE</string>
+
     <string name="action_connect">Connect</string>
     <string name="action_settings">Settings</string>
     <string name="action_about">About</string>
@@ -8,7 +10,7 @@
     <string name="title_activity_settings">Settings</string>
 
     <string name="pref_header_connection">Connection</string>
-    <string name="pref_header_video">Video</string>
+    <string name="pref_header_video">Display</string>
     <string name="pref_header_joystick">Joystick</string>
 
     <string name="pref_title_protocol">Protocol</string>
@@ -33,9 +35,11 @@
     <string name="pref_title_manual_mode">Manual Mode</string>
     <string-array name="list_pref_manual_mode_label">
         <item>RC Override</item>
+        <item>MAVLink Manual Control</item>
     </string-array>
     <string-array name="list_pref_manual_mode_value">
         <item>1</item>
+        <item>2</item>
     </string-array>
 
     <string name="pref_title_throttle_mode_gamepad">Gamepad Mode</string>
@@ -51,9 +55,15 @@
     <string name="pref_title_joystick_button_x">Button X</string>
     <string name="pref_title_joystick_button_y">Button Y</string>
 
-    <string name="pref_title_enable_video">Enable video</string>
-    <string name="pref_summary_enable_video_on">UDP video enabled</string>
-    <string name="pref_summary_enable_video_off">UDP video disabled</string>
+    <string name="pref_title_display_mode">Display Mode</string>
+    <string-array name="list_pref_display_mode_label">
+        <item>Google Map</item>
+        <item>UDP Video</item>
+    </string-array>
+    <string-array name="list_pref_display_mode_value">
+        <item>1</item>
+        <item>2</item>
+    </string-array>
 
     <string name="pref_title_udp_video_port">UDP Video Port</string>
     <string name="pref_default_udp_video_port">5000</string>

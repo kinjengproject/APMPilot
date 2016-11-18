@@ -7,7 +7,7 @@
         android:title="@string/pref_header_connection" />
 
     <header
-        android:fragment="org.kinjeng.apmpilot.activities.SettingsActivity$VideoPreferenceFragment"
+        android:fragment="org.kinjeng.apmpilot.activities.SettingsActivity$DisplayPreferenceFragment"
         android:title="@string/pref_header_video" />
 
     <header
