@@ -5,25 +5,35 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PointF;
+import android.os.Bundle;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import com.o3dr.android.client.Drone;
+import com.o3dr.android.client.interfaces.DroneListener;
+import com.o3dr.services.android.lib.coordinate.LatLong;
+import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
+import com.o3dr.services.android.lib.drone.attribute.AttributeEventExtra;
 import com.o3dr.services.android.lib.drone.attribute.AttributeType;
 import com.o3dr.services.android.lib.drone.property.Altitude;
 import com.o3dr.services.android.lib.drone.property.Attitude;
 import com.o3dr.services.android.lib.drone.property.Battery;
+import com.o3dr.services.android.lib.drone.property.Gps;
 import com.o3dr.services.android.lib.drone.property.Speed;
 import com.o3dr.services.android.lib.drone.property.State;
 
 import org.kinjeng.apmpilot.classes.CustomDrone;
 
+import java.util.Calendar;
+import java.util.concurrent.ArrayBlockingQueue;
+
 /**
  * Created by sblaksono on 29/10/2016.
  */
 
-public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
+public class HUDView extends SurfaceView implements SurfaceHolder.Callback, DroneListener {
 
     protected CustomDrone drone;
 
@@ -32,18 +42,36 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
     protected int textSize = 16;
     protected float hudAngle = 180;
 
+    protected class DroneMessage {
+        String message;
+        long timestamp;
+    }
+
+    protected ArrayBlockingQueue<DroneMessage> dms;
+    protected String lastMessage;
+
     public HUDView(Context context) {
         super(context);
         getHolder().addCallback(this);
+        dms = new ArrayBlockingQueue<DroneMessage>(255);
+        addMessage("READY");
     }
 
     public HUDView(Context context, AttributeSet attrs) {
         super(context, attrs);
         getHolder().addCallback(this);
+        dms = new ArrayBlockingQueue<DroneMessage>(255);
+        addMessage("READY");
     }
 
     public void setDrone(CustomDrone drone) {
-        this.drone = drone;
+        if (this.drone != drone) {
+            if (this.drone != null) {
+                this.drone.unregisterDroneListener(this);
+            }
+            this.drone = drone;
+            this.drone.registerDroneListener(this);
+        }
     }
 
     protected int dp2px(int dps) {
@@ -115,10 +143,10 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
         String s = "";
 
         // target circle
-        canvas.drawCircle(cx, cy, dp2px(8), linePaint);
-        canvas.drawLine(cx - dp2px(16), cy, cx - dp2px(8), cy, linePaint);
-        canvas.drawLine(cx, cy - dp2px(16), cx, cy - dp2px(8), linePaint);
-        canvas.drawLine(cx + dp2px(8), cy, cx + dp2px(16), cy, linePaint);
+        canvas.drawCircle(x + cx, y + cy, dp2px(8), linePaint);
+        canvas.drawLine(x + cx - dp2px(16), y + cy, x + cx - dp2px(8), y + cy, linePaint);
+        canvas.drawLine(x + cx, y + cy - dp2px(16), x + cx, y + cy - dp2px(8), linePaint);
+        canvas.drawLine(x + cx + dp2px(8), y + cy, x + cx + dp2px(16), y + cy, linePaint);
 
         if (drone != null) {
 
@@ -126,7 +154,7 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
             Attitude attitude = drone.getAttribute(AttributeType.ATTITUDE);
 
             // yaw
-            canvas.drawLine(x, dp2px(textSize + 24), x + w, dp2px(textSize + 24), linePaint);
+            canvas.drawLine(x, y + dp2px(textSize + 24), x + w, y + dp2px(textSize + 24), linePaint);
             yy = y + dp2px(textSize + 8);
             float yaw = (float) attitude.getYaw();
             float a1 = yaw - (hudAngle / 2);
@@ -142,15 +170,20 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
                 else s = String.valueOf(hh);
                 xx = x + (((a - a1) / (hudAngle / 2)) * (w / 2));
                 canvas.drawText(s, xx - (int) (textPaint.measureText(s) / 2), yy, textPaint);
-                canvas.drawLine(xx, dp2px(textSize + 16), xx, dp2px(textSize + 24), linePaint);
+                canvas.drawLine(xx, y + dp2px(textSize + 16), xx, y + dp2px(textSize + 24), linePaint);
                 a += 15;
             }
 
             yy += dp2px(textSize + 32);
             s = String.valueOf((int) (yaw < 0 ? 360 + yaw : yaw));
-            xx = cx;
-            canvas.drawLine(xx, dp2px(textSize + 24), xx, dp2px(textSize + 32), linePaint);
+            xx = x + cx;
+            canvas.drawLine(xx, y + dp2px(textSize + 24), xx, y + dp2px(textSize + 32), linePaint);
             canvas.drawText(s, xx - (textPaint.measureText(s) / 2), yy, textPaint);
+
+            // draw messages
+            yy += dp2px(textSize * 2);
+            s = getMessage().toUpperCase();
+            canvas.drawText(s, x + cx - (textPaint.measureText(s) / 2), yy, textPaint);
 
             // draw roll and pitch
             float roll = (float) attitude.getRoll();
@@ -188,19 +221,31 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
             // draw altitude
             yy += dp2px(textSize * 2);
             Altitude altitude = drone.getAttribute(AttributeType.ALTITUDE);
-            canvas.drawText("Alt: " + String.format("%3.1f", altitude.getAltitude()) + " m", xx, yy, textPaint);
+            canvas.drawText("ALT: " + String.format("%3.1f", altitude.getAltitude()) + " m", xx, yy, textPaint);
 
             // draw speed
             yy += dp2px(textSize);
             Speed speed = drone.getAttribute(AttributeType.SPEED);
-            canvas.drawText("Spd: " + String.format("%3.1f", speed.getGroundSpeed() * 3600 / 1000) + " km/h", xx, yy, textPaint);
+            canvas.drawText("SPD: " + String.format("%3.1f", speed.getGroundSpeed() * 3600 / 1000) + " km/h", xx, yy, textPaint);
 
             // draw battery status
             yy += dp2px(textSize * 2);
             Battery battery = drone.getAttribute(AttributeType.BATTERY);
-            canvas.drawText("Bat: " + String.format("%3.0f", battery.getBatteryRemain()) + "%", xx, yy, textPaint);
+            canvas.drawText("BAT: " + String.format("%3.0f", battery.getBatteryRemain()) + "%", xx, yy, textPaint);
             yy += dp2px(textSize);
             canvas.drawText(String.format("%3.1f", battery.getBatteryVoltage()) + " V / " + String.format("%3.1f", battery.getBatteryCurrent()) + " A", xx, yy, textPaint);
+
+            // draw gps info
+            yy += dp2px(textSize * 2);
+            Gps gps = drone.getAttribute(AttributeType.GPS);
+            canvas.drawText("GPS: " + gps.getFixStatus().toUpperCase(), xx, yy, textPaint);
+            yy += dp2px(textSize);
+            canvas.drawText("SAT: " + gps.getSatellitesCount(), xx, yy, textPaint);
+            yy += dp2px(textSize);
+            LatLong latLong = gps.getPosition();
+            if (latLong != null) {
+                canvas.drawText(String.format("%3.3f", latLong.getLatitude()) + " " + String.format("%3.3f", latLong.getLongitude()), xx, yy, textPaint);
+            }
 
             // draw drone status
             s = "";
@@ -235,6 +280,87 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
     @Override
     protected void onDraw(Canvas canvas){
         drawHUD(canvas, 0, 0, canvas.getWidth(), canvas.getHeight());
+    }
+
+    protected void addMessage(String message) {
+        if (lastMessage != message) {
+            if (dms.remainingCapacity() < 1) {
+                dms.poll();
+                if (dms.isEmpty()) lastMessage = null;
+            }
+            DroneMessage dm = new DroneMessage();
+            dm.message = message;
+            dm.timestamp = Calendar.getInstance().getTimeInMillis();
+            dms.add(dm);
+            lastMessage = message;
+        }
+    }
+
+    protected String getMessage() {
+        try {
+            DroneMessage dm = dms.peek();
+            if (dm != null) {
+                if (Calendar.getInstance().getTimeInMillis() - dm.timestamp > 2000) {
+                    dms.poll();
+                    if (dms.isEmpty()) lastMessage = null;
+                }
+                return dm.message;
+            }
+        } catch (Exception e) {
+
+        }
+        return "";
+    }
+
+    @Override
+    public void onDroneEvent(String event, Bundle extras) {
+        if (getVisibility() == VISIBLE) {
+            switch (event) {
+                case AttributeEvent.STATE_CONNECTED:
+                case AttributeEvent.STATE_DISCONNECTED:
+                case AttributeEvent.STATE_VEHICLE_MODE:
+                case AttributeEvent.STATE_ARMING:
+                case AttributeEvent.STATE_UPDATED:
+                case AttributeEvent.TYPE_UPDATED:
+                case AttributeEvent.ALTITUDE_UPDATED:
+                case AttributeEvent.SPEED_UPDATED:
+                case AttributeEvent.BATTERY_UPDATED:
+                case AttributeEvent.ATTITUDE_UPDATED:
+                case AttributeEvent.GPS_FIX:
+                case AttributeEvent.GPS_POSITION:
+                case AttributeEvent.GPS_COUNT:
+                    postInvalidate();
+                    break;
+
+                case AttributeEvent.WARNING_NO_GPS:
+                    addMessage("WARNING: NO GPS");
+                    postInvalidate();
+                    break;
+
+                case AttributeEvent.AUTOPILOT_ERROR:
+                    String errid = drone.getAttribute(AttributeEventExtra.EXTRA_AUTOPILOT_ERROR_ID);
+                    if (errid != null) {
+                        addMessage("AUTOPILOT ERROR: " + errid);
+                        postInvalidate();
+                    }
+                    break;
+
+                case AttributeEvent.AUTOPILOT_MESSAGE:
+                    String message = drone.getAttribute(AttributeEventExtra.EXTRA_AUTOPILOT_MESSAGE);
+                    addMessage(message);
+                    postInvalidate();
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
+
+    @Override
+    public void onDroneServiceInterrupted(String errorMsg) {
+        addMessage(errorMsg);
+        postInvalidate();
     }
 
 }

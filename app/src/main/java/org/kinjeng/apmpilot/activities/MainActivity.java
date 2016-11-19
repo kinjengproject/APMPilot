@@ -30,7 +30,6 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
     protected BaseJoystick joystick;
     protected CustomTower tower;
     protected CustomDrone drone;
-    protected final Handler handler = new Handler();
 
     protected PowerManager.WakeLock mWakeLock;
     protected ImageButton preferenceButton;
@@ -188,14 +187,14 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         if (drone.isConnected()) {
             drone.disconnect();
         }
-        tower.unregisterDrone(drone);
+        tower.unregisterDrone();
         tower.disconnect();
         super.onStop();
     }
 
     @Override
     public void onTowerConnected() {
-        tower.registerDrone(drone, handler);
+        tower.registerDrone(drone);
         drone.registerDroneListener(this);
     }
 
@@ -211,6 +210,8 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
             case AttributeEvent.STATE_DISCONNECTED:
                 updateConnectionState();
                 updateDisplay();
+                break;
+
             case AttributeEvent.STATE_VEHICLE_MODE:
             case AttributeEvent.STATE_ARMING:
             case AttributeEvent.STATE_UPDATED:

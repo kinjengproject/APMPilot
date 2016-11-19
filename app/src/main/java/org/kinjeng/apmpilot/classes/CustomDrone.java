@@ -2,7 +2,9 @@ package org.kinjeng.apmpilot.classes;
 
 import android.content.Context;
 
+import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.common.msg_rc_channels_override;
+import com.MAVLink.common.msg_rc_channels_raw;
 import com.o3dr.android.client.Drone;
 import com.o3dr.android.client.MavlinkObserver;
 import com.o3dr.android.client.apis.ExperimentalApi;
@@ -24,38 +26,31 @@ import java.util.Calendar;
 
 public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationListener {
 
-    public static  int RC_OUTPUT_COUNT = 8;
+    protected Context context;
 
-    private Context context;
-
-    /**
-     * Creates a Drone instance.
-     *
-     * @param context Application context
-     */
-    public CustomDrone(Context context) {
-        super(context);
-        this.context = context;
-    }
-
-    protected short rcThrottleMin = 1100;
-    protected short rcThrottleMax = 1900;
-    protected short rcRollMin = 1100;
-    protected short rcRollMax = 1900;
-    protected short rcPitchMin = 1100;
-    protected short rcPitchMax = 1900;
-    protected short rcYawMin = 1100;
-    protected short rcYawMax = 1900;
-    protected short rcChannel5 = 0;
-    protected short rcChannel6 = 0;
-    protected short rcChannel7 = 0;
-    protected short rcChannel8 = 0;
+    protected int rcThrottleMin = 1100;
+    protected int rcThrottleMax = 1900;
+    protected int rcRollMin = 1100;
+    protected int rcRollMax = 1900;
+    protected int rcPitchMin = 1100;
+    protected int rcPitchMax = 1900;
+    protected int rcYawMin = 1100;
+    protected int rcYawMax = 1900;
+    protected int rcChannel1 = 1500;
+    protected int rcChannel2 = 1500;
+    protected int rcChannel3 = 1100;
+    protected int rcChannel4 = 1500;
+    protected int rcChannel5 = 0;
+    protected int rcChannel6 = 0;
+    protected int rcChannel7 = 0;
+    protected int rcChannel8 = 0;
 
     protected float throttle = 0.0f;
     protected float roll = 0.5f;
     protected float pitch = 0.5f;
     protected float yaw = 0.5f;
     protected long lastTRPYUpdate = 0;
+    protected long lastTRPYSend = 0;
 
     protected boolean gimbalActive = false;
     protected float minGimbalPitch = -45;
@@ -68,6 +63,52 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
     protected float gimbalPitch = 0;
     protected float gimbalYaw = 0;
     protected long lastGimbalUpdate = 0;
+
+    protected MavlinkObserver observer;
+
+    /**
+     * Creates a Drone instance.
+     *
+     * @param context Application context
+     */
+    public CustomDrone(Context context) {
+        super(context);
+        this.context = context;
+
+        observer = new MavlinkObserver() {
+            @Override
+            public void onMavlinkMessageReceived(MavlinkMessageWrapper mavlinkMessageWrapper) {
+                processMavlinkMessage(mavlinkMessageWrapper);
+            }
+        };
+    }
+
+    protected void processMavlinkMessage(MavlinkMessageWrapper mavlinkMessageWrapper) {
+        MAVLinkMessage mavLinkMessage = mavlinkMessageWrapper.getMavLinkMessage();
+        if (mavLinkMessage instanceof msg_rc_channels_raw) {
+            msg_rc_channels_raw msg = (msg_rc_channels_raw) mavLinkMessage;
+            rcChannel1 = msg.chan1_raw;
+            rcChannel2 = msg.chan2_raw;
+            rcChannel3 = msg.chan3_raw;
+            rcChannel4 = msg.chan4_raw;
+            rcChannel5 = msg.chan5_raw;
+            rcChannel6 = msg.chan6_raw;
+            rcChannel7 = msg.chan7_raw;
+            rcChannel8 = msg.chan8_raw;
+            // sync
+            if (Calendar.getInstance().getTimeInMillis() - lastTRPYSend > 500) {
+                syncTRPY();
+            }
+        }
+
+    }
+
+    protected void syncTRPY() {
+        roll = ((float) (rcChannel1 - rcRollMin)) / ((float) (rcRollMax - rcRollMin));
+        pitch = ((float) (rcChannel2 - rcPitchMin)) / ((float) (rcPitchMax - rcPitchMin));
+        throttle = ((float) (rcChannel3 - rcThrottleMin)) / ((float) (rcThrottleMax - rcThrottleMin));
+        yaw = ((float) (rcChannel4 - rcYawMin)) / ((float) (rcYawMax - rcYawMin));
+    }
 
     public float getThrottle() {
         return throttle;
@@ -89,8 +130,12 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
         return lastTRPYUpdate;
     }
 
+    protected boolean isEqual(float a, float b) {
+        return (Math.abs(a - b) < 0.0001);
+    }
+
     public void setTRPY(float throttle, float roll, float pitch, float yaw) {
-        if ((this.throttle != throttle) || (this.roll != roll) || (this.pitch != pitch) || (this.yaw != yaw)) {
+        if (!isEqual(this.throttle, throttle) || !isEqual(this.roll, roll) || !isEqual(this.pitch, pitch) || !isEqual(this.yaw, yaw)) {
             this.throttle = throttle;
             this.roll = roll;
             this.pitch = pitch;
@@ -99,7 +144,7 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
             if (Settings.getInt("pref_manual_mode", 1) == 1) {
 
                 msg_rc_channels_override msg = new msg_rc_channels_override();
-                msg.chan1_raw = rcRollMin + ((short) (roll * (rcRollMax - rcRollMin)));;
+                msg.chan1_raw = rcRollMin + ((int) (roll * (rcRollMax - rcRollMin)));;
                 msg.chan2_raw = rcPitchMin + ((int) (pitch * (rcPitchMax - rcPitchMin)));
                 msg.chan3_raw = rcThrottleMin + ((int) (throttle * (rcThrottleMax - rcThrottleMin)));
                 msg.chan4_raw = rcYawMin + ((int) (yaw * (rcYawMax - rcYawMin)));
@@ -111,6 +156,7 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
                 msg.target_component = 0;
 
                 ExperimentalApi.getApi(this).sendMavlinkMessage(new MavlinkMessageWrapper(msg));
+                lastTRPYSend = Calendar.getInstance().getTimeInMillis();
             }
 
         }
@@ -251,6 +297,7 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
         if (gimbalActive) {
             stopGimbalControl();
         }
+        removeMavlinkObserver(observer);
         super.disconnect();
     }
 
@@ -265,6 +312,7 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
             }
             ConnectionParameter connectionParams = ConnectionParameter.newUdpConnection(udpPort, null);
             connect(connectionParams);
+            addMavlinkObserver(observer);
         }
         else if (prefProtocol.equals("TCP")) {
             String tcpHost = Settings.getString("pref_tcp_host", "");
@@ -276,6 +324,7 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
             }
             ConnectionParameter connectionParams = ConnectionParameter.newTcpConnection(tcpHost, tcpPort, null);
             connect(connectionParams);
+            addMavlinkObserver(observer);
         }
         else if (prefProtocol.equals("USB")) {
             int usbBaudRate = ConnectionType.DEFAULT_USB_BAUD_RATE;
@@ -286,6 +335,7 @@ public class CustomDrone extends Drone implements GimbalApi.GimbalOrientationLis
             }
             ConnectionParameter connectionParams = ConnectionParameter.newUsbConnection(usbBaudRate, null);
             connect(connectionParams);
+            addMavlinkObserver(observer);
         }
     }
 
