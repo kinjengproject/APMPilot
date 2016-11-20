@@ -1,19 +1,30 @@
 package org.kinjeng.apmpilot.activities;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.PowerManager;
+import android.support.v4.app.ActivityCompat;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.LatLng;
 import com.o3dr.android.client.interfaces.DroneListener;
 import com.o3dr.android.client.interfaces.TowerListener;
+import com.o3dr.services.android.lib.coordinate.LatLong;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
+import com.o3dr.services.android.lib.drone.attribute.AttributeType;
+import com.o3dr.services.android.lib.drone.property.Gps;
 import com.o3dr.services.android.lib.drone.property.VehicleMode;
 
 import org.kinjeng.apmpilot.R;
@@ -23,13 +34,15 @@ import org.kinjeng.apmpilot.classes.CustomTower;
 import org.kinjeng.apmpilot.classes.PhysicalJoystick;
 import org.kinjeng.apmpilot.classes.Settings;
 import org.kinjeng.apmpilot.views.HUDView;
+import org.kinjeng.apmpilot.views.MapOverlayView;
 import org.kinjeng.apmpilot.views.VideoView;
 
-public class MainActivity extends Activity implements TowerListener, DroneListener {
+public class MainActivity extends Activity implements TowerListener, DroneListener, OnMapReadyCallback {
 
     protected BaseJoystick joystick;
     protected CustomTower tower;
     protected CustomDrone drone;
+    protected GoogleMap map;
 
     protected PowerManager.WakeLock mWakeLock;
     protected ImageButton preferenceButton;
@@ -38,6 +51,10 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
     protected ImageButton landButton;
     protected HUDView hudView;
     protected VideoView videoView;
+    protected MapFragment mapFragment;
+    protected MapOverlayView mapOverlayView;
+    protected View videoContainer;
+    protected View mapContainer;
 
     // Thread for controlling input and hud
     protected class ControlThread extends Thread {
@@ -91,8 +108,7 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
             public void onClick(View v) {
                 if (drone.isConnected()) {
                     drone.disconnect();
-                }
-                else {
+                } else {
                     drone.connect();
                 }
             }
@@ -100,7 +116,7 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
 
         tower = new CustomTower(getApplicationContext());
         drone = createDrone();
-        createDisplay();
+        createDisplay(savedInstanceState);
 
         rtlButton = (ImageButton) findViewById(R.id.button_rtl);
         rtlButton.setOnClickListener(new View.OnClickListener() {
@@ -134,6 +150,7 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
 
     @Override
     protected void onDestroy() {
+        super.onDestroy();
         controlThread.setRunning(false);
         try {
             controlThread.join();
@@ -141,7 +158,6 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
             e.printStackTrace();
         }
         mWakeLock.release();
-        super.onDestroy();
     }
 
     @Override
@@ -149,12 +165,12 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
             getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         }
     }
 
@@ -246,36 +262,82 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         }
     }
 
-    protected void createDisplay() {
+    protected void createDisplay(Bundle savedInstanceState) {
         videoView = (VideoView) findViewById(R.id.view_video);
         videoView.setDrone(drone);
         hudView = (HUDView) findViewById(R.id.view_hud);
         hudView.setDrone(drone);
+
+        mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.fragment_flight_map);
+        mapFragment.getMapAsync(this);
+        //mapOverlayView = (MapOverlayView) findViewById(R.id.view_map_overlay);
+        //mapOverlayView.setDrone(drone);
+
+        videoContainer = findViewById(R.id.container_video);
+        mapContainer = findViewById(R.id.container_map);
+
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        map = googleMap;
+        map.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(-6.175387, 106.827131), Settings.getInt("pref_map_zoom", 18)));
     }
 
     protected void updateDisplay() {
         if (Settings.getInt("pref_display_mode", 1) == 2) {
             // 2 : Video
-            if (videoView.getVisibility() != View.VISIBLE) {
-                videoView.setVisibility(View.VISIBLE);
+            if (videoContainer.getVisibility() != View.VISIBLE) {
+                videoContainer.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        videoContainer.setVisibility(View.VISIBLE);
+                    }
+                });
             }
-            if (hudView.getVisibility() != View.VISIBLE) {
-                hudView.setVisibility(View.VISIBLE);
+            if (mapContainer.getVisibility() != View.INVISIBLE) {
+                mapContainer.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mapContainer.setVisibility(View.INVISIBLE);
+                    }
+                });
             }
             hudView.postInvalidate();
         }
         else {
             // 1 or default : Google Map
-            if (videoView.getVisibility() != View.INVISIBLE) {
-                videoView.stopVideo();
-                videoView.setVisibility(View.INVISIBLE);
+            if (mapContainer.getVisibility() != View.VISIBLE) {
+                mapContainer.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mapContainer.setVisibility(View.VISIBLE);
+                    }
+                });
             }
-            if (hudView.getVisibility() != View.INVISIBLE) {
-                hudView.setVisibility(View.INVISIBLE);
+            if (videoContainer.getVisibility() != View.INVISIBLE) {
+                videoContainer.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        videoView.stopVideo();
+                        videoContainer.setVisibility(View.INVISIBLE);
+                    }
+                });
             }
-
-
-
+            mapContainer.post(new Runnable() {
+                @Override
+                public void run() {
+                    Gps gps = drone.getAttribute(AttributeType.GPS);
+                    LatLong latLong = gps.getPosition();
+                    if (latLong != null) {
+                        map.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latLong.getLatitude(), latLong.getLongitude())));
+                    }
+                }
+            });
         }
     }
 
@@ -299,8 +361,8 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
 
     @Override
     protected void onResume() {
-        super.onResume();
         tower.startMotionSensor();
+        super.onResume();
     }
 
     @Override

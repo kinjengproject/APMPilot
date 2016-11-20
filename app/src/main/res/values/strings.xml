@@ -1,8 +1,6 @@
 <resources>
     <string name="app_name">APMPilot</string>
 
-    <string name="api_map_key">AIzaSyACbBXBpVsXD6qIKGW8-Ndd-lKNeoLz9XE</string>
-
     <string name="action_connect">Connect</string>
     <string name="action_settings">Settings</string>
     <string name="action_about">About</string>
@@ -71,5 +69,8 @@
     <string name="pref_title_gimbal_accelerometer">Accelerometer Gimbal Control</string>
     <string name="pref_summary_gimbal_accelerometer_on">Gimbal control using accelerometer</string>
     <string name="pref_summary_gimbal_accelerometer_off">Gimbal control using hat buttons</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 </resources>
