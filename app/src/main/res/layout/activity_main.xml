@@ -35,6 +35,11 @@
             android:layout_height="match_parent"
             android:id="@+id/fragment_flight_map" />
 
+        <org.kinjeng.apmpilot.views.MapOverlayView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/view_map_overlay" />
+
     </FrameLayout>
 
     <GridLayout

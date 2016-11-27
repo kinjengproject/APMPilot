@@ -1,24 +1,15 @@
 package org.kinjeng.apmpilot.activities;
 
-import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.location.Location;
 import android.os.Bundle;
 import android.os.PowerManager;
-import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.LatLng;
 import com.o3dr.android.client.interfaces.DroneListener;
 import com.o3dr.android.client.interfaces.TowerListener;
 import com.o3dr.services.android.lib.coordinate.LatLong;
@@ -33,16 +24,16 @@ import org.kinjeng.apmpilot.classes.CustomDrone;
 import org.kinjeng.apmpilot.classes.CustomTower;
 import org.kinjeng.apmpilot.classes.PhysicalJoystick;
 import org.kinjeng.apmpilot.classes.Settings;
+import org.kinjeng.apmpilot.fragments.FlightMapFragment;
 import org.kinjeng.apmpilot.views.HUDView;
 import org.kinjeng.apmpilot.views.MapOverlayView;
 import org.kinjeng.apmpilot.views.VideoView;
 
-public class MainActivity extends Activity implements TowerListener, DroneListener, OnMapReadyCallback {
+public class MainActivity extends AppCompatActivity implements TowerListener, DroneListener {
 
     protected BaseJoystick joystick;
     protected CustomTower tower;
     protected CustomDrone drone;
-    protected GoogleMap map;
 
     protected PowerManager.WakeLock mWakeLock;
     protected ImageButton preferenceButton;
@@ -51,10 +42,10 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
     protected ImageButton landButton;
     protected HUDView hudView;
     protected VideoView videoView;
-    protected MapFragment mapFragment;
-    protected MapOverlayView mapOverlayView;
     protected View videoContainer;
     protected View mapContainer;
+    protected FlightMapFragment flightMapFragment;
+    protected MapOverlayView mapOverlayView;
 
     // Thread for controlling input and hud
     protected class ControlThread extends Thread {
@@ -268,24 +259,14 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
         hudView = (HUDView) findViewById(R.id.view_hud);
         hudView.setDrone(drone);
 
-        mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.fragment_flight_map);
-        mapFragment.getMapAsync(this);
-        //mapOverlayView = (MapOverlayView) findViewById(R.id.view_map_overlay);
-        //mapOverlayView.setDrone(drone);
+        flightMapFragment = (FlightMapFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_flight_map);
+        flightMapFragment.init();
+        mapOverlayView = (MapOverlayView) findViewById(R.id.view_map_overlay);
+        mapOverlayView.setDrone(drone);
 
         videoContainer = findViewById(R.id.container_video);
         mapContainer = findViewById(R.id.container_map);
 
-    }
-
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        map = googleMap;
-        map.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(-6.175387, 106.827131), Settings.getInt("pref_map_zoom", 18)));
     }
 
     protected void updateDisplay() {
@@ -334,7 +315,7 @@ public class MainActivity extends Activity implements TowerListener, DroneListen
                     Gps gps = drone.getAttribute(AttributeType.GPS);
                     LatLong latLong = gps.getPosition();
                     if (latLong != null) {
-                        map.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latLong.getLatitude(), latLong.getLongitude())));
+                        flightMapFragment.moveCamera(latLong);
                     }
                 }
             });
