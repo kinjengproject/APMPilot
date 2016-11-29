@@ -148,6 +148,7 @@ public class MapOverlayView extends FlightDataView {
     protected void onDraw(Canvas canvas) {
         int cx = (canvas.getWidth() / 2);
         int cy = (canvas.getHeight() / 2);
+        int iconsz = 48;
 
         if (drone != null) {
 
@@ -157,9 +158,12 @@ public class MapOverlayView extends FlightDataView {
             // draw arrow
             canvas.save();
             canvas.rotate(yaw, cx, cy);
-            Drawable d = getResources().getDrawable(R.drawable.arrow_rw_32);
-            d.setBounds(cx - dp2px(16), cy - dp2px(16), cx + dp2px(16), cy + dp2px(16));
-            d.draw(canvas);
+            Drawable db = getResources().getDrawable(R.drawable.arrow_145_48b);
+            db.setBounds(cx - dp2px(iconsz / 2) + 1, cy - dp2px(iconsz / 2) + 1, cx + dp2px(iconsz / 2) + 1, cy + dp2px(iconsz / 2) + 1);
+            db.draw(canvas);
+            Drawable dw = getResources().getDrawable(R.drawable.arrow_145_48w);
+            dw.setBounds(cx - dp2px(iconsz / 2), cy - dp2px(iconsz / 2), cx + dp2px(iconsz / 2), cy + dp2px(iconsz / 2));
+            dw.draw(canvas);
             canvas.restore();
 
             String msg = getMessage().toUpperCase();
