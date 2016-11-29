@@ -7,15 +7,40 @@
     android:layout_height="match_parent"
     tools:context="org.kinjeng.apmpilot.activities.MainActivity">
 
-    <org.kinjeng.apmpilot.views.VideoView
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/view_video" />
+        android:id="@+id/container_video">
 
-    <org.kinjeng.apmpilot.views.HUDView
+        <org.kinjeng.apmpilot.views.VideoView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/view_video" />
+
+        <org.kinjeng.apmpilot.views.HUDView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/view_hud" />
+
+    </FrameLayout>
+
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/view_hud" />
+        android:id="@+id/container_map">
+
+        <fragment
+            android:name="org.kinjeng.apmpilot.fragments.FlightMapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/fragment_flight_map" />
+
+        <org.kinjeng.apmpilot.views.MapOverlayView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/view_map_overlay" />
+
+    </FrameLayout>
 
     <GridLayout
         android:layout_width="match_parent"

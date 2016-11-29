@@ -111,7 +111,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     protected boolean isValidFragment(String fragmentName) {
         return PreferenceFragment.class.getName().equals(fragmentName)
                 || ConnectionPreferenceFragment.class.getName().equals(fragmentName)
-                || VideoPreferenceFragment.class.getName().equals(fragmentName)
+                || DisplayPreferenceFragment.class.getName().equals(fragmentName)
                 || JoystickPreferenceFragment.class.getName().equals(fragmentName);
     }
 
@@ -151,15 +151,15 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     }
 
     /**
-     * This fragment shows video preferences only. It is used when the
+     * This fragment shows display preferences only. It is used when the
      * activity is showing a two-pane settings UI.
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public static class VideoPreferenceFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
+    public static class DisplayPreferenceFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
-            addPreferencesFromResource(R.xml.pref_video);
+            addPreferencesFromResource(R.xml.pref_display);
             setHasOptionsMenu(true);
             for (int i = 0; i < getPreferenceScreen().getPreferenceCount(); i++) {
                 updatePreferenceSummary(getPreferenceScreen().getPreference(i));

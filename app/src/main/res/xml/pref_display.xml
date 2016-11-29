@@ -1,11 +1,11 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <CheckBoxPreference
-        android:defaultValue="false"
-        android:title="@string/pref_title_enable_video"
-        android:key="pref_enable_video"
-        android:summaryOn="@string/pref_summary_enable_video_on"
-        android:summaryOff="@string/pref_summary_enable_video_off" />
+    <ListPreference
+        android:defaultValue="1"
+        android:title="@string/pref_title_display_mode"
+        android:entries="@array/list_pref_display_mode_label"
+        android:entryValues="@array/list_pref_display_mode_value"
+        android:key="pref_display_mode" />
 
     <EditTextPreference
         android:defaultValue="@string/pref_default_udp_video_port"

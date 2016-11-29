@@ -8,24 +8,21 @@ import android.graphics.PointF;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 
+import com.o3dr.services.android.lib.coordinate.LatLong;
 import com.o3dr.services.android.lib.drone.attribute.AttributeType;
 import com.o3dr.services.android.lib.drone.property.Altitude;
 import com.o3dr.services.android.lib.drone.property.Attitude;
 import com.o3dr.services.android.lib.drone.property.Battery;
+import com.o3dr.services.android.lib.drone.property.Gps;
 import com.o3dr.services.android.lib.drone.property.Speed;
 import com.o3dr.services.android.lib.drone.property.State;
-
-import org.kinjeng.apmpilot.classes.CustomDrone;
 
 /**
  * Created by sblaksono on 29/10/2016.
  */
 
-public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
-
-    protected CustomDrone drone;
+public class HUDView extends FlightDataView {
 
     protected TextPaint textPaint;
     protected Paint linePaint;
@@ -34,20 +31,10 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
 
     public HUDView(Context context) {
         super(context);
-        getHolder().addCallback(this);
     }
 
     public HUDView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        getHolder().addCallback(this);
-    }
-
-    public void setDrone(CustomDrone drone) {
-        this.drone = drone;
-    }
-
-    protected int dp2px(int dps) {
-        return (int) (dps * getResources().getDisplayMetrics().density);
     }
 
     @Override
@@ -60,16 +47,6 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
         linePaint.setColor(Color.WHITE);
         linePaint.setStyle(Paint.Style.STROKE);
         linePaint.setStrokeWidth(dp2px(1));
-    }
-
-    @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
-    }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
-
     }
 
     protected PointF rpTransform(float roll, float x, float y, float pitch, float h) {
@@ -115,10 +92,10 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
         String s = "";
 
         // target circle
-        canvas.drawCircle(cx, cy, dp2px(8), linePaint);
-        canvas.drawLine(cx - dp2px(16), cy, cx - dp2px(8), cy, linePaint);
-        canvas.drawLine(cx, cy - dp2px(16), cx, cy - dp2px(8), linePaint);
-        canvas.drawLine(cx + dp2px(8), cy, cx + dp2px(16), cy, linePaint);
+        canvas.drawCircle(x + cx, y + cy, dp2px(8), linePaint);
+        canvas.drawLine(x + cx - dp2px(16), y + cy, x + cx - dp2px(8), y + cy, linePaint);
+        canvas.drawLine(x + cx, y + cy - dp2px(16), x + cx, y + cy - dp2px(8), linePaint);
+        canvas.drawLine(x + cx + dp2px(8), y + cy, x + cx + dp2px(16), y + cy, linePaint);
 
         if (drone != null) {
 
@@ -126,7 +103,7 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
             Attitude attitude = drone.getAttribute(AttributeType.ATTITUDE);
 
             // yaw
-            canvas.drawLine(x, dp2px(textSize + 24), x + w, dp2px(textSize + 24), linePaint);
+            canvas.drawLine(x, y + dp2px(textSize + 24), x + w, y + dp2px(textSize + 24), linePaint);
             yy = y + dp2px(textSize + 8);
             float yaw = (float) attitude.getYaw();
             float a1 = yaw - (hudAngle / 2);
@@ -142,15 +119,20 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
                 else s = String.valueOf(hh);
                 xx = x + (((a - a1) / (hudAngle / 2)) * (w / 2));
                 canvas.drawText(s, xx - (int) (textPaint.measureText(s) / 2), yy, textPaint);
-                canvas.drawLine(xx, dp2px(textSize + 16), xx, dp2px(textSize + 24), linePaint);
+                canvas.drawLine(xx, y + dp2px(textSize + 16), xx, y + dp2px(textSize + 24), linePaint);
                 a += 15;
             }
 
             yy += dp2px(textSize + 32);
             s = String.valueOf((int) (yaw < 0 ? 360 + yaw : yaw));
-            xx = cx;
-            canvas.drawLine(xx, dp2px(textSize + 24), xx, dp2px(textSize + 32), linePaint);
+            xx = x + cx;
+            canvas.drawLine(xx, y + dp2px(textSize + 24), xx, y + dp2px(textSize + 32), linePaint);
             canvas.drawText(s, xx - (textPaint.measureText(s) / 2), yy, textPaint);
+
+            // draw messages
+            yy += dp2px(textSize * 2);
+            s = getMessage().toUpperCase();
+            canvas.drawText(s, x + cx - (textPaint.measureText(s) / 2), yy, textPaint);
 
             // draw roll and pitch
             float roll = (float) attitude.getRoll();
@@ -188,19 +170,31 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
             // draw altitude
             yy += dp2px(textSize * 2);
             Altitude altitude = drone.getAttribute(AttributeType.ALTITUDE);
-            canvas.drawText("Alt: " + String.format("%3.1f", altitude.getAltitude()) + " m", xx, yy, textPaint);
+            canvas.drawText("ALT: " + String.format("%3.1f", altitude.getAltitude()) + " m", xx, yy, textPaint);
 
             // draw speed
             yy += dp2px(textSize);
             Speed speed = drone.getAttribute(AttributeType.SPEED);
-            canvas.drawText("Spd: " + String.format("%3.1f", speed.getGroundSpeed() * 3600 / 1000) + " km/h", xx, yy, textPaint);
+            canvas.drawText("SPD: " + String.format("%3.1f", speed.getGroundSpeed() * 3600 / 1000) + " km/h", xx, yy, textPaint);
 
             // draw battery status
             yy += dp2px(textSize * 2);
             Battery battery = drone.getAttribute(AttributeType.BATTERY);
-            canvas.drawText("Bat: " + String.format("%3.0f", battery.getBatteryRemain()) + "%", xx, yy, textPaint);
+            canvas.drawText("BAT: " + String.format("%3.0f", battery.getBatteryRemain()) + "%", xx, yy, textPaint);
             yy += dp2px(textSize);
             canvas.drawText(String.format("%3.1f", battery.getBatteryVoltage()) + " V / " + String.format("%3.1f", battery.getBatteryCurrent()) + " A", xx, yy, textPaint);
+
+            // draw gps info
+            yy += dp2px(textSize * 2);
+            Gps gps = drone.getAttribute(AttributeType.GPS);
+            canvas.drawText("GPS: " + gps.getFixStatus().toUpperCase(), xx, yy, textPaint);
+            yy += dp2px(textSize);
+            canvas.drawText("SAT: " + gps.getSatellitesCount(), xx, yy, textPaint);
+            yy += dp2px(textSize);
+            LatLong latLong = gps.getPosition();
+            if (latLong != null) {
+                canvas.drawText(String.format("%3.3f", latLong.getLatitude()) + " " + String.format("%3.3f", latLong.getLongitude()), xx, yy, textPaint);
+            }
 
             // draw drone status
             s = "";
@@ -233,7 +227,7 @@ public class HUDView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     @Override
-    protected void onDraw(Canvas canvas){
+    protected void onDraw(Canvas canvas) {
         drawHUD(canvas, 0, 0, canvas.getWidth(), canvas.getHeight());
     }
 
